@@ -34,7 +34,7 @@
 
 QString HeaderGenerator::fileNameForClass(const AbstractMetaClass* metaClass) const
 {
-    return metaClass->qualifiedCppName().toLower().replace("::", "_") + QLatin1String("_wrapper.h");
+    return fixedCppTypeName(metaClass->qualifiedCppName()).toLower() + QLatin1String("_wrapper.h");
 }
 
 void HeaderGenerator::writeCopyCtor(QTextStream& s, const AbstractMetaClass* metaClass) const
@@ -80,7 +80,7 @@ void HeaderGenerator::generateClass(QTextStream& s, const AbstractMetaClass* met
     s << licenseComment();
 
     QString wrapperName = HeaderGenerator::wrapperName(metaClass);
-    QString headerGuard = wrapperName.replace("::", "_").toUpper();
+    QString headerGuard = fixedCppTypeName(wrapperName).toUpper();
 
     // Header
     s << "#ifndef SBK_" << headerGuard << "_H" << endl;

@@ -364,6 +364,23 @@ bool AbstractMetaBuilder::build(QIODevice* input)
     }
     ReportHandler::flush();
 
+    ReportHandler::progress("Generating template instantiations model...");
+    foreach (QList<TypeEntry*> entries, types->allEntries()) {
+        foreach (TypeEntry* entry, entries) {
+            if (entry->isComplex()) {
+                ComplexTypeEntry *centry = static_cast<ComplexTypeEntry *>(entry);
+                if (centry->isTemplateInstantiation()) {
+                    AbstractMetaClass *cls = createInstantiationMetaClass(centry);
+                    if (!cls)
+                        continue;
+
+                    addAbstractMetaClass(cls);
+                }
+            }
+        }
+    }
+    ReportHandler::flush();
+
     // We need to know all global enums
     QHash<QString, EnumModelItem> enumMap = m_dom->enumMap();
     ReportHandler::setProgressReference(enumMap);
@@ -1300,6 +1317,38 @@ void AbstractMetaBuilder::traverseFields(ScopeModelItem scope_item, AbstractMeta
             metaClass->addField(metaField);
         }
     }
+}
+
+AbstractMetaClass* AbstractMetaBuilder::createInstantiationMetaClass(ComplexTypeEntry *entry)
+{
+    QString fullClassName = entry->name();
+
+    // Determine base classes
+    // TODO
+
+    AbstractMetaClass* metaClass = createMetaClass();
+    metaClass->setTypeEntry(entry);
+    *metaClass += AbstractMetaAttributes::Public;
+    if (entry->stream())
+        metaClass->setStream(true);
+
+    ReportHandler::debugSparse(QString("instantiation: '%1'").arg(metaClass->fullName()));
+
+    QStringList template_parameters = entry->templateArgNames();
+    QList<TypeEntry *> template_args;
+    template_args.clear();
+    for (int i = 0; i < template_parameters.size(); ++i) {
+        TemplateArgumentEntry *param_type = new TemplateArgumentEntry(template_parameters.at(i), entry->version());
+        param_type->setOrdinal(i);
+        template_args.append(param_type);
+    }
+    metaClass->setTemplateArguments(template_args);
+
+    // Set the default include file name
+    if (!entry->include().isValid())
+        setInclude(entry, entry->include().name());
+
+    return metaClass;
 }
 
 void AbstractMetaBuilder::setupFunctionDefaults(AbstractMetaFunction* metaFunction, AbstractMetaClass *metaClass)
