@@ -31,6 +31,7 @@ pairuser.cpp
 pen.cpp
 photon.cpp
 point.cpp
+pointer.cpp
 pointf.cpp
 polygon.cpp
 protected.cpp
