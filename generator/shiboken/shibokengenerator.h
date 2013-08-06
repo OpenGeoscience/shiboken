@@ -284,6 +284,7 @@ public:
     static QString fixedCppTypeName(const CustomConversion::TargetToNativeConversion* toNative);
     static QString fixedCppTypeName(const AbstractMetaType* type);
     static QString fixedCppTypeName(const TypeEntry* type, QString typeName = QString());
+    static QString fixedCppTypeName(QString typeName);
 
     static bool isNumber(QString cpythonApiName);
     static bool isNumber(const TypeEntry* type);

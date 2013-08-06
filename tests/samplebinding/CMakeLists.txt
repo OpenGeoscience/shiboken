@@ -69,6 +69,7 @@ ${CMAKE_CURRENT_BINARY_DIR}/sample/photon_base_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/photon_valueidentity_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/photon_valueduplicator_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/point_wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/pointer_simpleobject__wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointerholder_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointf_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointvaluelist_wrapper.cpp
