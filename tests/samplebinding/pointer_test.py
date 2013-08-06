@@ -37,8 +37,10 @@ class TestPointer(unittest.TestCase):
     '''Test cases for a template pointer class.'''
 
     def testRedirection(self):
-        # Not implemented yet
-        pass
+        '''Test method redirection on template pointer class.'''
+        o1 = SimpleObject.create()
+        o2 = SimpleObject.create()
+        self.assertGreater(o2.id(), o1.id())
 
     def testReferenceCounting(self):
         '''Test basic wrapping of template pointer class.'''
