@@ -113,6 +113,16 @@ public:
         m_flagsEntries[fte->originalName()] = fte;
     }
 
+    TypeTemplateEntry* findTypeTemplate(const QString& name) const
+    {
+        return m_typeTemplates[name];
+    }
+
+    void addTypeTemplate(TypeTemplateEntry* t)
+    {
+        m_typeTemplates[t->name()] = t;
+    }
+
     TemplateEntry* findTemplate(const QString& name) const
     {
         return m_templates[name];
@@ -206,6 +216,7 @@ private:
     bool m_suppressWarnings;
     TypeEntryHash m_entries;
     SingleTypeEntryHash m_flagsEntries;
+    TypeTemplateEntryHash m_typeTemplates;
     TemplateEntryHash m_templates;
     QStringList m_suppressedWarnings;
 
