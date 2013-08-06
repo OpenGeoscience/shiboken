@@ -2075,6 +2075,7 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
     if (typeString.startsWith("::"))
         typeString.remove(0, 2);
 
+    // Try regular types first
     QString adjustedTypeName = typeString;
     QStringList instantiatedTypes;
     int lpos = typeString.indexOf('<');
@@ -2101,9 +2102,8 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
 
     TypeEntry* typeEntry = TypeDatabase::instance()->findType(adjustedTypeName);
 
-    AbstractMetaType* metaType = 0;
     if (typeEntry) {
-        metaType = new AbstractMetaType();
+        AbstractMetaType* metaType = new AbstractMetaType();
         metaType->setTypeEntry(typeEntry);
         metaType->setIndirections(indirections);
         metaType->setReference(isReference);
@@ -2115,8 +2115,27 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
         }
         metaType->decideUsagePattern();
         m_metaTypeFromStringCache.insert(typeSignature, metaType);
+        return metaType;
     }
-    return metaType;
+
+    // If that fails, and the type is a template instantiation, try the unmodified
+    // type name, which will match template instantiation types
+    if (typeString != adjustedTypeName) {
+        if ((typeEntry = TypeDatabase::instance()->findType(typeString))) {
+            AbstractMetaType* metaType = new AbstractMetaType();
+            metaType->setTypeEntry(typeEntry);
+            metaType->setIndirections(indirections);
+            metaType->setReference(isReference);
+            metaType->setConstant(isConst);
+            metaType->setTypeUsagePattern(AbstractMetaType::ContainerPattern);
+            metaType->decideUsagePattern();
+            m_metaTypeFromStringCache.insert(typeSignature, metaType);
+            return metaType;
+        }
+    }
+
+    // Type was not found
+    return 0;
 }
 
 AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromTypeEntry(const TypeEntry* typeEntry)
