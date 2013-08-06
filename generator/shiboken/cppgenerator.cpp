@@ -108,7 +108,7 @@ CppGenerator::CppGenerator()
 
 QString CppGenerator::fileNameForClass(const AbstractMetaClass *metaClass) const
 {
-    return metaClass->qualifiedCppName().toLower().replace("::", "_") + QLatin1String("_wrapper.cpp");
+    return fixedCppTypeName(metaClass->qualifiedCppName()).toLower() + QLatin1String("_wrapper.cpp");
 }
 
 QList<AbstractMetaFunctionList> CppGenerator::filterGroupedOperatorFunctions(const AbstractMetaClass* metaClass,
@@ -961,8 +961,8 @@ void CppGenerator::writeConverterFunctions(QTextStream& s, const AbstractMetaCla
     // Returns the C++ pointer of the Python wrapper.
     s << "// Python to C++ pointer conversion - returns the C++ object of the Python wrapper (keeps object identity)." << endl;
 
-    QString sourceTypeName = metaClass->name();
-    QString targetTypeName = QString("%1_PTR").arg(metaClass->name());
+    QString sourceTypeName = fixedCppTypeName(metaClass->name());
+    QString targetTypeName = QString("%1_PTR").arg(sourceTypeName);
     QString code;
     QTextStream c(&code);
     c << INDENT << "Shiboken::Conversions::pythonToCppPointer(&" << cpythonType << ", pyIn, cppOut);";
@@ -1003,8 +1003,8 @@ void CppGenerator::writeConverterFunctions(QTextStream& s, const AbstractMetaCla
 
     // Always copies C++ value (not pointer, and not reference) to a new Python wrapper.
     s << endl << "// C++ to Python copy conversion." << endl;
-    sourceTypeName = QString("%1_COPY").arg(metaClass->name());
-    targetTypeName = metaClass->name();
+    sourceTypeName = QString("%1_COPY").arg(fixedCppTypeName(metaClass->name()));
+    targetTypeName = fixedCppTypeName(metaClass->name());
     code.clear();
     c << INDENT << "return Shiboken::Object::newObject(&" << cpythonType << ", new ::" << wrapperName(metaClass);
     c << "(*((" << typeName << "*)cppIn)), true, true);";
@@ -1013,7 +1013,7 @@ void CppGenerator::writeConverterFunctions(QTextStream& s, const AbstractMetaCla
 
     // Python to C++ copy conversion.
     s << "// Python to C++ copy conversion." << endl;
-    sourceTypeName = metaClass->name();
+    sourceTypeName = fixedCppTypeName(metaClass->name());
     targetTypeName = QString("%1_COPY").arg(sourceTypeName);
     code.clear();
     c << INDENT << "*((" << typeName << "*)cppOut) = *" << cpythonWrapperCPtr(metaClass->typeEntry(), "pyIn") << ';';
@@ -1128,15 +1128,15 @@ void CppGenerator::writeConverterRegister(QTextStream& s, const AbstractMetaClas
     s << cpythonTypeName(metaClass) << ',' << endl;
     {
         Indentation indent(INDENT);
-        QString sourceTypeName = metaClass->name();
-        QString targetTypeName = QString("%1_PTR").arg(metaClass->name());
+        QString sourceTypeName = fixedCppTypeName(metaClass->name());
+        QString targetTypeName = QString("%1_PTR").arg(sourceTypeName);
         s << INDENT << pythonToCppFunctionName(sourceTypeName, targetTypeName) << ',' << endl;
         s << INDENT << convertibleToCppFunctionName(sourceTypeName, targetTypeName) << ',' << endl;
         std::swap(targetTypeName, sourceTypeName);
         s << INDENT << cppToPythonFunctionName(sourceTypeName, targetTypeName);
         if (metaClass->typeEntry()->isValue()) {
             s << ',' << endl;
-            sourceTypeName = QString("%1_COPY").arg(metaClass->name());
+            sourceTypeName = QString("%1_COPY").arg(fixedCppTypeName(metaClass->name()));
             s << INDENT << cppToPythonFunctionName(sourceTypeName, targetTypeName);
         }
     }
@@ -1167,8 +1167,8 @@ void CppGenerator::writeConverterRegister(QTextStream& s, const AbstractMetaClas
 
     // Python to C++ copy (value, not pointer neither reference) conversion.
     s << INDENT << "// Add Python to C++ copy (value, not pointer neither reference) conversion to type converter." << endl;
-    QString sourceTypeName = metaClass->name();
-    QString targetTypeName = QString("%1_COPY").arg(metaClass->name());
+    QString sourceTypeName = fixedCppTypeName(metaClass->name());
+    QString targetTypeName = QString("%1_COPY").arg(sourceTypeName);
     QString toCpp = pythonToCppFunctionName(sourceTypeName, targetTypeName);
     QString isConv = convertibleToCppFunctionName(sourceTypeName, targetTypeName);
     writeAddPythonToCppConversion(s, "converter", toCpp, isConv);
@@ -4256,7 +4256,7 @@ void CppGenerator::writeClassRegister(QTextStream& s, const AbstractMetaClass* m
     QString enclosingObjectVariable = hasEnclosingClass ? "enclosingClass" : "module";
 
     QString pyTypeName = cpythonTypeName(metaClass);
-    s << "void init_" << metaClass->qualifiedCppName().replace("::", "_");
+    s << "void init_" << fixedCppTypeName(metaClass->qualifiedCppName());
     s << "(PyObject* " << enclosingObjectVariable << ")" << endl;
     s << '{' << endl;
 
@@ -4623,9 +4623,9 @@ void CppGenerator::finishGeneration()
         if (!shouldGenerate(cls))
             continue;
 
-        s_classInitDecl << "void init_" << cls->qualifiedCppName().replace("::", "_") << "(PyObject* module);" << endl;
+        s_classInitDecl << "void init_" << fixedCppTypeName(cls->qualifiedCppName()) << "(PyObject* module);" << endl;
 
-        QString defineStr = "init_" + cls->qualifiedCppName().replace("::", "_");
+        QString defineStr = "init_" + fixedCppTypeName(cls->qualifiedCppName());
 
         if (cls->enclosingClass() && (cls->enclosingClass()->typeEntry()->codeGeneration() != TypeEntry::GenerateForSubclass))
             defineStr += "(" + cpythonTypeNameExt(cls->enclosingClass()->typeEntry()) +"->tp_dict);";
