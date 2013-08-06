@@ -55,6 +55,15 @@ static QString stripTemplateArgs(const QString &name)
     return pos < 0 ? name : name.left(pos);
 }
 
+static bool entryHasFunction(const ComplexTypeEntry *entry, const QString &signature)
+{
+    foreach (const FunctionModification &mod, entry->functionModifications()) {
+        if (mod.signature == signature)
+            return true;
+    }
+    return false;
+}
+
 AbstractMetaBuilder::AbstractMetaBuilder() : m_currentClass(0), m_logDirectory(QString('.')+QDir::separator())
 {
 }
@@ -364,18 +373,22 @@ bool AbstractMetaBuilder::build(QIODevice* input)
     }
     ReportHandler::flush();
 
-    ReportHandler::progress("Generating template instantiations model...");
+    QList<ComplexTypeEntry *> instantiationTypes;
     foreach (QList<TypeEntry*> entries, types->allEntries()) {
         foreach (TypeEntry* entry, entries) {
-            if (entry->isTemplateInstantiation()) {
-                ComplexTypeEntry *centry = static_cast<ComplexTypeEntry *>(entry);
-                AbstractMetaClass *cls = createInstantiationMetaClass(centry);
-                if (!cls)
-                    continue;
-
-                addAbstractMetaClass(cls);
-            }
+            if (entry->isTemplateInstantiation())
+                instantiationTypes << static_cast<ComplexTypeEntry *>(entry);
         }
+    }
+
+    ReportHandler::setProgressReference(instantiationTypes);
+    foreach (ComplexTypeEntry *entry, instantiationTypes) {
+        ReportHandler::progress("Generating template instantiations model...");
+        AbstractMetaClass *cls = createInstantiationMetaClass(entry);
+        if (!cls)
+            continue;
+
+        addAbstractMetaClass(cls);
     }
     ReportHandler::flush();
 
@@ -425,6 +438,15 @@ bool AbstractMetaBuilder::build(QIODevice* input)
 
     foreach (NamespaceModelItem item, namespaceTypeValues)
         traverseNamespaceMembers(item);
+
+    // Resolve template instantiation argument types and create redirections
+    ReportHandler::setProgressReference(instantiationTypes);
+    foreach (ComplexTypeEntry *entry, instantiationTypes) {
+        ReportHandler::progress("Fixing template instantiations...");
+        AbstractMetaClass* cls = m_metaClasses.findClass(entry->qualifiedCppName());
+        traverseInstantiation(entry, cls);
+    }
+    ReportHandler::flush();
 
     // Global functions
     foreach (FunctionModelItem func, m_dom->functions()) {
@@ -1347,6 +1369,83 @@ AbstractMetaClass* AbstractMetaBuilder::createInstantiationMetaClass(ComplexType
         setInclude(entry, entry->include().name());
 
     return metaClass;
+}
+
+void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, AbstractMetaClass *metaClass)
+{
+    // Resolve type entries of template instantiation types
+    QList<const TypeEntry *> argTypeEntries;
+    QHash<int, AbstractMetaType *> argTypes;
+    int ordinal = 0;
+    foreach (QString argName, entry->templateArgNames()) {
+        TypeInfo argInfo;
+        argInfo.setQualifiedName(argName.split("::"));
+
+        bool ok = false;
+        AbstractMetaType *argType = translateType(argInfo, &ok);
+        if (ok) {
+            argTypes.insert(ordinal, argType);
+            argTypeEntries << argType->typeEntry();
+        } else {
+            ReportHandler::warning(QString("template parameter '%1' of '%2' is not known")
+                                  .arg(argName)
+                                  .arg(metaClass->name()));
+        }
+        ++ordinal;
+    }
+    entry->setTemplateArgTypes(argTypeEntries);
+
+    QList<TypeTemplateEntry::Argument> args = entry->templateType()->args();
+    Q_ASSERT(args.count() == ordinal);
+
+    // Set up redirections
+    foreach (ordinal, argTypes.keys()) {
+        const AbstractMetaType *argType = argTypes[ordinal];
+        QString accessor = args[ordinal].redirect();
+        if (!accessor.isEmpty()) {
+            AbstractMetaClass *argClass = m_metaClasses.findClass(argType->typeEntry()->qualifiedCppName());
+            if (argClass) {
+                foreach (AbstractMetaFunction *function, argClass->functions()) {
+                    if (!function->isStatic() && !function->isConstructor() && !function->isPrivate()) {
+                        QString signature = function->minimalSignature();
+                        if (signature.endsWith("const"))
+                            signature = signature.left((signature.length() - 5));
+
+                        // Generate meta function and add to meta class
+                        QString returnType = (function->type() ? function->type()->cppSignature() : QString("void"));
+                        bool isPublic = function->isPublic();
+                        AddedFunction addedFunction(signature, returnType, 0.0);
+                        addedFunction.setAccess(isPublic ? AddedFunction::Public : AddedFunction::Protected);
+                        addedFunction.setStatic(false);
+
+                        traverseFunction(addedFunction, metaClass);
+                        entry->addNewFunction(addedFunction);
+
+                        // If there is not a user-defined modification of this redirection, generate a default one
+                        if (!entryHasFunction(entry, signature)) {
+                            FunctionModification redirect(0.0);
+                            redirect.signature = signature;
+                            redirect.modifiers = (isPublic ? Modification::Public : Modification::Protected);
+                            redirect.modifiers |= Modification::CodeInjection;
+
+                            CodeSnip snip(0.0);
+                            if (function->type()) {
+                                snip.addCode("%RETURN_TYPE %0 = " + accessor + "%FUNCTION_NAME(%ARGUMENT_NAMES);\n");
+                                snip.addCode("%PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);\n");
+                            } else {
+                                snip.addCode(accessor + "%FUNCTION_NAME(%ARGUMENT_NAMES);\n");
+                            }
+                            snip.position = CodeSnip::Beginning;
+                            snip.language = TypeSystem::TargetLangCode;
+                            redirect.snips.append(snip);
+
+                            entry->addFunctionModification(redirect);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void AbstractMetaBuilder::setupFunctionDefaults(AbstractMetaFunction* metaFunction, AbstractMetaClass *metaClass)
