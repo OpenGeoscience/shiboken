@@ -2398,7 +2398,14 @@
         <arg redirect="%CPPSELF-&gt;get()-&gt;"/>
     </type-template>
     <object-type name="SimpleObject"/>
-    <value-type template="Pointer" args="SimpleObject"/>
+    <value-type template="Pointer" args="SimpleObject">
+        <add-function signature="get()" return-type="SimpleObject*">
+            <inject-code>
+                %RETURN_TYPE %0 = %CPPSELF->get();
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </add-function>
+    </value-type>
 
     <suppress-warning text="horribly broken type '__off64_t'" />
     <suppress-warning text="enum '__codecvt_result' does not have a type entry or is not an enum" />
