@@ -367,15 +367,13 @@ bool AbstractMetaBuilder::build(QIODevice* input)
     ReportHandler::progress("Generating template instantiations model...");
     foreach (QList<TypeEntry*> entries, types->allEntries()) {
         foreach (TypeEntry* entry, entries) {
-            if (entry->isComplex()) {
+            if (entry->isTemplateInstantiation()) {
                 ComplexTypeEntry *centry = static_cast<ComplexTypeEntry *>(entry);
-                if (centry->isTemplateInstantiation()) {
-                    AbstractMetaClass *cls = createInstantiationMetaClass(centry);
-                    if (!cls)
-                        continue;
+                AbstractMetaClass *cls = createInstantiationMetaClass(centry);
+                if (!cls)
+                    continue;
 
-                    addAbstractMetaClass(cls);
-                }
+                addAbstractMetaClass(cls);
             }
         }
     }
@@ -2241,15 +2239,22 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
     if (!type)
         type = TypeDatabase::instance()->findType(qualifiedName);
 
-    // 6. No? Try looking it up as a flags type
+    // 6. No? Try looking it up as a template type
+    if (!type) {
+        type = TypeDatabase::instance()->findTypeTemplate(qualifiedName);
+        if (type)
+            type = TypeDatabase::instance()->findType(typeInfo.instantiationName());
+    }
+
+    // 7. No? Try looking it up as a flags type
     if (!type)
         type = TypeDatabase::instance()->findFlagsType(qualifiedName);
 
-    // 7. No? Try looking it up as a container type
+    // 8. No? Try looking it up as a container type
     if (!type)
         type = TypeDatabase::instance()->findContainerType(name);
 
-    // 8. No? Check if the current class is a template and this type is one
+    // 9. No? Check if the current class is a template and this type is one
     //    of the parameters.
     if (!type && m_currentClass) {
         QList<TypeEntry *> template_args = m_currentClass->templateArguments();
@@ -2259,8 +2264,8 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
         }
     }
 
-    // 9. Try finding the type by prefixing it with the current
-    //    context and all baseclasses of the current context
+    // 10. Try finding the type by prefixing it with the current
+    //     context and all baseclasses of the current context
     if (!type && !TypeDatabase::instance()->isClassRejected(qualifiedName) && m_currentClass && resolveScope) {
         QStringList contexts;
         contexts.append(m_currentClass->qualifiedCppName());
@@ -2273,7 +2278,7 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
             type = TypeDatabase::instance()->findType(contexts.at(0) + "::" + qualifiedName);
             contexts.pop_front();
 
-            // 10. Last resort: Special cased prefix of Qt namespace since the meta object implicitly inherits this, so
+            // 11. Last resort: Special cased prefix of Qt namespace since the meta object implicitly inherits this, so
             //     enum types from there may be addressed without any scope resolution in properties.
             if (!contexts.size() && !subclassesDone) {
                 contexts << "Qt";
@@ -2301,22 +2306,24 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
     metaType->setConstant(typeInfo.is_constant);
     metaType->setOriginalTypeDescription(_typei.toString());
 
-    foreach (const TypeParser::Info &ta, typeInfo.template_instantiations) {
-        TypeInfo info;
-        info.setConstant(ta.is_constant);
-        info.setReference(ta.is_reference);
-        info.setIndirections(ta.indirections);
+    if (!type->isTemplateInstantiation()) {
+        foreach (const TypeParser::Info &ta, typeInfo.template_instantiations) {
+            TypeInfo info;
+            info.setConstant(ta.is_constant);
+            info.setReference(ta.is_reference);
+            info.setIndirections(ta.indirections);
 
-        info.setFunctionPointer(false);
-        info.setQualifiedName(ta.instantiationName().split("::"));
+            info.setFunctionPointer(false);
+            info.setQualifiedName(ta.instantiationName().split("::"));
 
-        AbstractMetaType* targType = translateType(info, ok);
-        if (!(*ok)) {
-            delete metaType;
-            return 0;
+            AbstractMetaType* targType = translateType(info, ok);
+            if (!(*ok)) {
+                delete metaType;
+                return 0;
+            }
+
+            metaType->addInstantiation(targType, true);
         }
-
-        metaType->addInstantiation(targType, true);
     }
 
     // The usage pattern *must* be decided *after* the possible template

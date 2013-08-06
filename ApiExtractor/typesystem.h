@@ -881,6 +881,11 @@ public:
         return false;
     }
 
+    virtual bool isTemplateInstantiation() const
+    {
+        return false;
+    }
+
     virtual bool isNativeIdBased() const
     {
         return false;
