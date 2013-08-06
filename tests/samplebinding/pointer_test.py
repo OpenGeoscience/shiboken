@@ -42,6 +42,11 @@ class TestPointer(unittest.TestCase):
         o2 = SimpleObject.create()
         self.assertGreater(o2.id(), o1.id())
 
+    def testAddedMethod(self):
+        '''Test method redirection on template pointer class.'''
+        o = SimpleObject.create()
+        self.assertEqual(type(o.get()), SimpleObject)
+
     def testReferenceCounting(self):
         '''Test basic wrapping of template pointer class.'''
         o1 = SimpleObject.create()

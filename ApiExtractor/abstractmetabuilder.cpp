@@ -1368,6 +1368,8 @@ AbstractMetaClass* AbstractMetaBuilder::createInstantiationMetaClass(ComplexType
     if (!entry->include().isValid())
         setInclude(entry, entry->include().name());
 
+    fillAddedFunctions(metaClass);
+
     return metaClass;
 }
 
