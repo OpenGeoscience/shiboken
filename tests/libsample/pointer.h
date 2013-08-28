@@ -72,6 +72,9 @@ private:
     int *m_ref;
 };
 
+class SimpleObject;
+typedef Pointer<SimpleObject> SimpleObjectPointer;
+
 class LIBSAMPLE_API SimpleObject
 {
 public:
@@ -80,6 +83,7 @@ public:
     inline int id() const { return m_id; }
 
     static Pointer<SimpleObject> create();
+    static SimpleObjectPointer createAliased() { return create(); }
     static int count();
 
 private:
