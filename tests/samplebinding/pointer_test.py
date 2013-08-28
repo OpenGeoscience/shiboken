@@ -57,6 +57,12 @@ class TestPointer(unittest.TestCase):
         del o2
         self.assertEqual(SimpleObject.count(), 0)
 
+    def testTypeAlias(self):
+        '''Test that typedef of type template instantiation is recognized.'''
+        o1 = SimpleObject.create()
+        o2 = SimpleObject.createAliased()
+        self.assertEqual(type(o1), type(o2))
+
 if __name__ == '__main__':
     unittest.main()
 
