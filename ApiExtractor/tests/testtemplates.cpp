@@ -324,7 +324,7 @@ void TestTemplates::testTypedefOfInstantiationOfTemplateClass()
     const ComplexTypeEntry* oneType = one->typeEntry();
     const ComplexTypeEntry* baseType = base->typeEntry();
     QCOMPARE(oneType->baseContainerType(), baseType);
-    QCOMPARE(one->baseClassNames(), QStringList("BaseTemplateClass<TypeOne>"));
+    QCOMPARE(one->baseClassNames(), QStringList("NSpace::BaseTemplateClass<TypeOne>"));
 
     QVERIFY(one->hasTemplateBaseClassInstantiations());
     AbstractMetaTypeList instantiations = one->templateBaseClassInstantiations();

@@ -31,7 +31,7 @@
 import sys
 import unittest
 
-from sample import SimpleObject
+from sample import SimpleObject, PointerNamespace, PointerHelper
 
 class TestPointer(unittest.TestCase):
     '''Test cases for a template pointer class.'''
@@ -62,6 +62,13 @@ class TestPointer(unittest.TestCase):
         o1 = SimpleObject.create()
         o2 = SimpleObject.createAliased()
         self.assertEqual(type(o1), type(o2))
+
+    def testTypeAlias(self):
+        '''Test type resolution for some namespace corner cases.'''
+        o = PointerNamespace.createNamespaceObject()
+        o.numbers
+        PointerHelper.numbers(o, 1, 3)
+        PointerHelper.numbers(o.get(), 4, 2)
 
 if __name__ == '__main__':
     unittest.main()

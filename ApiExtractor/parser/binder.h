@@ -32,6 +32,8 @@
 #include "name_compiler.h"
 #include "declarator_compiler.h"
 
+#include <QtCore/QSet>
+
 class TokenStream;
 class LocationManager;
 class Control;
@@ -98,6 +100,8 @@ private:
 
     void updateItemPosition(CodeModelItem item, AST *node);
 
+    void addQualifiedType(const QStringList &name);
+
 private:
     CodeModel *_M_model;
     LocationManager &_M_location;
@@ -113,7 +117,7 @@ private:
     EnumModelItem _M_current_enum;
     QStringList _M_context;
     TemplateParameterList _M_current_template_parameters; // ### check me
-    QHash<QString, QString> _M_qualified_types;
+    QSet<QString> _M_qualified_types;
     QHash<QString, int> _M_anonymous_enums;
 
 protected:
