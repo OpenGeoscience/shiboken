@@ -25,6 +25,8 @@
 #ifndef POINTER_H
 #define POINTER_H
 
+#include <list>
+
 #include "libsamplemacros.h"
 
 template <typename T>
@@ -91,6 +93,32 @@ private:
 
     int m_id;
 };
+
+namespace PointerNamespace
+{
+
+template <typename T> class Pointer
+{
+public:
+    Pointer() {}
+    Pointer(T* obj) : m_ptr(obj) {}
+    inline T* get() const { return m_ptr.get(); }
+
+private:
+    ::Pointer<T> m_ptr;
+};
+
+class LIBSAMPLE_API NamespaceObject
+{
+public:
+    ::std::list<int> numbers(int first, int count) const;
+};
+
+typedef Pointer<NamespaceObject> NamespaceObjectPointer;
+
+NamespaceObjectPointer createNamespaceObject();
+
+}
 
 #endif // POINTER_H
 
