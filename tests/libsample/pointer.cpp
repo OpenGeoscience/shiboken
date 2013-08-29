@@ -46,3 +46,16 @@ int SimpleObject::count()
 {
     return counter;
 }
+
+std::list<int> PointerNamespace::NamespaceObject::numbers(int first, int count) const
+{
+    std::list<int> result;
+    while (count--)
+        result.push_back(first++);
+    return result;
+}
+
+PointerNamespace::NamespaceObjectPointer PointerNamespace::createNamespaceObject()
+{
+    return NamespaceObjectPointer(new NamespaceObject);
+}

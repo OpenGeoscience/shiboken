@@ -2157,7 +2157,7 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
     if (!type) {
         QRegExp r("(.*)<(.*)>$");
         if (r.indexIn(typeInfo.name) != -1) {
-            templateArg = r.cap(2);
+            templateArg = r.cap(2).trimmed();
             if (templateArg.contains(','))
                 ReportHandler::warning("add-function tag doesn't support container types with more than one argument or template arguments.");
             else

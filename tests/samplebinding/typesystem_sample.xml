@@ -2370,6 +2370,14 @@
         </add-function>
     </value-type>
 
+    <namespace-type name="PointerNamespace">
+        <object-type name="NamespaceObject"/>
+    </namespace-type>
+    <type-template name="PointerNamespace::Pointer">
+        <arg redirect="%CPPSELF-&gt;get()-&gt;"/>
+    </type-template>
+    <value-type template="PointerNamespace::Pointer" args="PointerNamespace::NamespaceObject"/>
+
     <suppress-warning text="horribly broken type '__off64_t'" />
     <suppress-warning text="enum '__codecvt_result' does not have a type entry or is not an enum" />
     <suppress-warning text="Pure virtual method &quot;Abstract::hideFunction(HideType*)&quot; must be implement but was completely removed on typesystem." />
