@@ -116,7 +116,7 @@ public:
 
 typedef Pointer<NamespaceObject> NamespaceObjectPointer;
 
-NamespaceObjectPointer createNamespaceObject();
+LIBSAMPLE_API NamespaceObjectPointer createNamespaceObject();
 
 }
 
