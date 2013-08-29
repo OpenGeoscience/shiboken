@@ -59,3 +59,13 @@ PointerNamespace::NamespaceObjectPointer PointerNamespace::createNamespaceObject
 {
     return NamespaceObjectPointer(new NamespaceObject);
 }
+
+std::list<int> PointerHelper::numbers(const PointerNamespace::NamespaceObjectPointer& ptr, int first, int count)
+{
+    return ptr.get()->numbers(first, count);
+}
+
+std::list<int> PointerHelper::numbers(const PointerNamespace::PointerNamespaceObjectAlias& obj, int first, int count)
+{
+    return obj.numbers(first, count);
+}

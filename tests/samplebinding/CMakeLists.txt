@@ -73,6 +73,7 @@ ${CMAKE_CURRENT_BINARY_DIR}/sample/pointer_simpleobject__wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointernamespace_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointernamespace_namespaceobject_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointernamespace_pointer_pointernamespace_namespaceobject__wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/pointerhelper_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointerholder_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointf_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointvaluelist_wrapper.cpp
