@@ -33,7 +33,6 @@
 #include "dumptree.h"
 
 #include <iostream>
-#include <QDebug>
 
 Binder::Binder(CodeModel *__model, LocationManager &__location, Control *__control)
         : _M_model(__model),
@@ -45,13 +44,13 @@ Binder::Binder(CodeModel *__model, LocationManager &__location, Control *__contr
         name_cc(this),
         decl_cc(this)
 {
-    _M_qualified_types["char"] = QString();
-    _M_qualified_types["double"] = QString();
-    _M_qualified_types["float"] = QString();
-    _M_qualified_types["int"] = QString();
-    _M_qualified_types["long"] = QString();
-    _M_qualified_types["short"] = QString();
-    _M_qualified_types["void"] = QString();
+    _M_qualified_types.insert("char");
+    _M_qualified_types.insert("double");
+    _M_qualified_types.insert("float");
+    _M_qualified_types.insert("int");
+    _M_qualified_types.insert("long");
+    _M_qualified_types.insert("short");
+    _M_qualified_types.insert("void");
 }
 
 Binder::~Binder()
@@ -521,7 +520,7 @@ void Binder::visitTypedef(TypedefAST *node)
         typeAlias->setName(alias_name);
         typeAlias->setType(qualifyType(typeInfo, currentScope()->qualifiedName()));
         typeAlias->setScope(typedefScope->qualifiedName());
-        _M_qualified_types[typeAlias->qualifiedName().join(".")] = QString();
+        addQualifiedType(typeAlias->qualifiedName());
         currentScope()->addTypeAlias(typeAlias);
     } while (it != end);
 }
@@ -574,7 +573,7 @@ void Binder::visitForwardDeclarationSpecifier(ForwardDeclarationSpecifierAST *no
         return;
 
     ScopeModelItem scope = currentScope();
-    _M_qualified_types[(scope->qualifiedName() + name_cc.qualifiedName()).join(".")] = QString();
+    addQualifiedType((scope->qualifiedName() + name_cc.qualifiedName()));
 }
 
 void Binder::visitClassSpecifier(ClassSpecifierAST *node)
@@ -624,7 +623,7 @@ void Binder::visitClassSpecifier(ClassSpecifierAST *node)
     CodeModel::FunctionType oldFunctionType = changeCurrentFunctionType(CodeModel::Normal);
 
     _M_current_class->setScope(scope->qualifiedName());
-    _M_qualified_types[_M_current_class->qualifiedName().join(".")] = QString();
+    addQualifiedType(_M_current_class->qualifiedName());
 
     scope->addClass(_M_current_class);
 
@@ -673,7 +672,7 @@ void Binder::visitEnumSpecifier(EnumSpecifierAST *node)
     _M_current_enum->setAnonymous(isAnonymous);
     _M_current_enum->setScope(enumScope->qualifiedName());
 
-    _M_qualified_types[_M_current_enum->qualifiedName().join(".")] = QString();
+    addQualifiedType(_M_current_enum->qualifiedName());
 
     enumScope->addEnum(_M_current_enum);
 
@@ -806,6 +805,33 @@ void Binder::applyFunctionSpecifiers(const ListNode<std::size_t> *it, FunctionMo
     } while (it != end);
 }
 
+static QString normalizeInstantiationName(const QString &name)
+{
+    const int n = name.indexOf('<');
+    if (n < 0)
+        return name;
+
+    // Convert template arguments into a 'standard' placeholder. This isn't perfect
+    // because it can't hope to understand '<' / '>' used as an operator in an
+    // argument (assuming we don't already fall apart on those elsewhere), but should
+    // suffice to handle most cases.
+    QString result = name;
+
+    // First remove any nested instantiation names
+    QRegExp nested("<([^<>]+)>");
+    int i;
+    while ((i = nested.lastIndexIn(result)) != n) {
+        result.replace(i, nested.matchedLength(), "_");
+    }
+
+    // Now rebuild the name with the template arguments replaced with placeholders
+    QStringList args = result.split(',');
+    result = args[0].left(n + 1) + "_1";
+    for (int a = 1; a < args.count(); ++a)
+        result += QString(", _%1").arg(a + 1);
+    return result + ">";
+}
+
 TypeInfo Binder::qualifyType(const TypeInfo &type, const QStringList &context) const
 {
     // ### Potentially improve to use string list in the name table to
@@ -817,7 +843,9 @@ TypeInfo Binder::qualifyType(const TypeInfo &type, const QStringList &context) c
     } else {
         QStringList expanded = context;
         expanded << type.qualifiedName();
-        if (_M_qualified_types.contains(expanded.join("."))) {
+        QStringList normalized = expanded;
+        normalized.last() = normalizeInstantiationName(normalized.last());
+        if (_M_qualified_types.contains(normalized.join("."))) {
             TypeInfo modified_type = type;
             modified_type.setQualifiedName(expanded);
             return modified_type;
@@ -840,6 +868,17 @@ TypeInfo Binder::qualifyType(const TypeInfo &type, const QStringList &context) c
             copy.removeLast();
             return qualifyType(type, copy);
         }
+    }
+}
+
+void Binder::addQualifiedType(const QStringList &name)
+{
+    _M_qualified_types.insert(name.join("."));
+
+    if (name.last().contains('<')) {
+        QStringList normalized = name;
+        normalized.last() = normalizeInstantiationName(normalized.last());
+        _M_qualified_types.insert(normalized.join("."));
     }
 }
 

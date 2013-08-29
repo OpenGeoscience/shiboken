@@ -599,6 +599,8 @@
         <value-type name="ValueIdentity"/>
         <value-type name="ValueDuplicator"/>
     </namespace-type>
+    <add-function signature="photonValue(const Photon::ValueIdentity&amp;)" return-type="int"/>
+    <add-function signature="photonValue(const Photon::ValueDuplicator&amp;)" return-type="int"/>
 
     <value-type name="IntList">
         <enum-type name="CtorEnum"/>
@@ -2376,7 +2378,16 @@
     <type-template name="PointerNamespace::Pointer">
         <arg redirect="%CPPSELF-&gt;get()-&gt;"/>
     </type-template>
-    <value-type template="PointerNamespace::Pointer" args="PointerNamespace::NamespaceObject"/>
+    <value-type template="PointerNamespace::Pointer" args="PointerNamespace::NamespaceObject">
+        <add-function signature="get()" return-type="PointerNamespace::NamespaceObject*">
+            <inject-code>
+                %RETURN_TYPE %0 = %CPPSELF->get();
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </add-function>
+    </value-type>
+
+    <value-type name="PointerHelper"/>
 
     <suppress-warning text="horribly broken type '__off64_t'" />
     <suppress-warning text="enum '__codecvt_result' does not have a type entry or is not an enum" />

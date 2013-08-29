@@ -115,10 +115,18 @@ public:
 };
 
 typedef Pointer<NamespaceObject> NamespaceObjectPointer;
+typedef NamespaceObject PointerNamespaceObjectAlias;
 
 LIBSAMPLE_API NamespaceObjectPointer createNamespaceObject();
 
 }
+
+class LIBSAMPLE_API PointerHelper
+{
+public:
+    static ::std::list<int> numbers(const PointerNamespace::NamespaceObjectPointer& ptr, int first, int count);
+    static ::std::list<int> numbers(const PointerNamespace::PointerNamespaceObjectAlias& obj, int first, int count);
+};
 
 #endif // POINTER_H
 
