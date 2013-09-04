@@ -640,7 +640,8 @@ public:
         TypeSystemType,
         CustomType,
         TargetLangType,
-        FunctionType
+        FunctionType,
+        TemplateType
     };
 
     enum CodeGeneration {
@@ -704,6 +705,10 @@ public:
     bool isContainer() const
     {
         return m_type == ContainerType;
+    }
+    bool isTypeTemplate() const
+    {
+        return m_type == TemplateType;
     }
     bool isVariant() const
     {
@@ -872,6 +877,11 @@ public:
         return false;
     }
     virtual bool isComplex() const
+    {
+        return false;
+    }
+
+    virtual bool isTemplateInstantiation() const
     {
         return false;
     }
@@ -1401,6 +1411,8 @@ private:
 };
 
 
+class TypeTemplateEntry;
+
 class ComplexTypeEntry : public TypeEntry
 {
 public:
@@ -1417,7 +1429,8 @@ public:
         Unknown
     };
 
-    ComplexTypeEntry(const QString &name, Type t, double vr)
+    ComplexTypeEntry(const QString &name, Type t, double vr, const TypeTemplateEntry *typeTemplate = 0,
+                     const QStringList &typeTemplateArgNames = QStringList())
             : TypeEntry(QString(name).replace(".*::", ""), t, vr),
             m_qualifiedCppName(name),
             m_qobject(false),
@@ -1426,7 +1439,9 @@ public:
             m_typeFlags(0),
             m_copyableFlag(Unknown),
             m_hashFunction(""),
-            m_baseContainerType(0)
+            m_baseContainerType(0),
+            m_templateArgNames(typeTemplateArgNames),
+            m_templateType(typeTemplate)
     {
     }
 
@@ -1639,6 +1654,29 @@ public:
         return m_baseContainerType;
     }
 
+    bool isTemplateInstantiation() const
+    {
+        return m_templateType;
+    }
+
+    QStringList templateArgNames() const
+    {
+        return m_templateArgNames;
+    }
+    const TypeTemplateEntry* templateType() const
+    {
+        return m_templateType;
+    }
+
+    void setTemplateArgTypes(QList<const TypeEntry*> templateArgs)
+    {
+        m_templateArgTypes = templateArgs;
+    }
+    QList<const TypeEntry*> templateArgTypes() const
+    {
+        return m_templateArgTypes;
+    }
+
     QString defaultConstructor() const;
     void setDefaultConstructor(const QString& defaultConstructor);
     bool hasDefaultConstructor() const;
@@ -1666,6 +1704,11 @@ private:
     QString m_hashFunction;
 
     const ComplexTypeEntry* m_baseContainerType;
+
+    QStringList m_templateArgNames;
+
+    const TypeTemplateEntry *m_templateType;
+    QList<const TypeEntry*> m_templateArgTypes;
 };
 
 class ContainerTypeEntry : public ComplexTypeEntry
@@ -1729,6 +1772,47 @@ private:
 
 typedef QList<const ContainerTypeEntry*> ContainerTypeEntryList;
 
+
+class TypeTemplateEntry : public ComplexTypeEntry
+{
+public:
+    class Argument
+    {
+    public:
+        Argument(const QString &redirect) : m_redirect(redirect) { }
+
+        QString redirect() const
+        {
+            return m_redirect;
+        }
+
+    private:
+        QString m_redirect;
+    };
+
+    TypeTemplateEntry(const QString &name, double vr)
+        : ComplexTypeEntry(name, TemplateType, vr)
+    {
+        setCodeGeneration(GenerateNothing);
+    }
+
+    QList<Argument> args() const // FIXME array of ??
+    {
+        return m_args;
+    }
+
+    void addArg(const QString &redirect)
+    {
+        m_args << Argument(redirect);
+    }
+
+private:
+    QList<Argument> m_args;
+};
+
+typedef QHash<QString, TypeTemplateEntry *> TypeTemplateEntryHash;
+
+
 class NamespaceTypeEntry : public ComplexTypeEntry
 {
 public:
@@ -1739,7 +1823,9 @@ public:
 class ValueTypeEntry : public ComplexTypeEntry
 {
 public:
-    ValueTypeEntry(const QString &name, double vr) : ComplexTypeEntry(name, BasicValueType, vr) { }
+    ValueTypeEntry(const QString &name, double vr, const TypeTemplateEntry *typeTemplate = 0,
+                    const QStringList &typeTemplateArgNames = QStringList())
+            : ComplexTypeEntry(name, BasicValueType, vr, typeTemplate, typeTemplateArgNames) { }
 
     bool isValue() const
     {
@@ -1875,8 +1961,9 @@ private:
 class ObjectTypeEntry : public ComplexTypeEntry
 {
 public:
-    ObjectTypeEntry(const QString &name, double vr)
-            : ComplexTypeEntry(name, ObjectType, vr), m_interface(0) {}
+    ObjectTypeEntry(const QString &name, double vr, const TypeTemplateEntry *typeTemplate = 0,
+                    const QStringList &typeTemplateArgNames = QStringList())
+            : ComplexTypeEntry(name, ObjectType, vr, typeTemplate, typeTemplateArgNames), m_interface(0) {}
 
     InterfaceTypeEntry *designatedInterface() const
     {

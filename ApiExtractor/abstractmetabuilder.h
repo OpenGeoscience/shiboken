@@ -102,6 +102,8 @@ public:
     void figureOutDefaultEnumArguments();
 
     void addAbstractMetaClass(AbstractMetaClass *cls);
+    AbstractMetaClass *createInstantiationMetaClass(ComplexTypeEntry *entry);
+    void traverseInstantiation(ComplexTypeEntry *entry, AbstractMetaClass *metaClass);
     AbstractMetaClass *traverseTypeAlias(TypeAliasModelItem item);
     AbstractMetaClass *traverseClass(ClassModelItem item);
     AbstractMetaClass* currentTraversedClass(ScopeModelItem item);

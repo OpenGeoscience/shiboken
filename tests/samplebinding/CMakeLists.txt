@@ -69,6 +69,11 @@ ${CMAKE_CURRENT_BINARY_DIR}/sample/photon_base_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/photon_valueidentity_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/photon_valueduplicator_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/point_wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/pointer_simpleobject__wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/pointernamespace_wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/pointernamespace_namespaceobject_wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/pointernamespace_pointer_pointernamespace_namespaceobject__wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/pointerhelper_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointerholder_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointf_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/pointvaluelist_wrapper.cpp
@@ -97,6 +102,7 @@ ${CMAKE_CURRENT_BINARY_DIR}/sample/samplenamespace_someclass_someotherinnerclass
 ${CMAKE_CURRENT_BINARY_DIR}/sample/samplenamespace_someclass_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/samplenamespace_derivedfromnamespace_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/simplefile_wrapper.cpp
+${CMAKE_CURRENT_BINARY_DIR}/sample/simpleobject_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/size_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/sizef_wrapper.cpp
 ${CMAKE_CURRENT_BINARY_DIR}/sample/sonofmderived1_wrapper.cpp

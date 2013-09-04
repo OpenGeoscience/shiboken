@@ -286,7 +286,7 @@ QString ShibokenGenerator::wrapperName(const AbstractMetaClass* metaClass) const
     if (shouldGenerateCppWrapper(metaClass)) {
         QString result = metaClass->name();
         if (metaClass->enclosingClass()) // is a inner class
-            result.replace("::", "_");
+            result = fixedCppTypeName(result);
 
         result +="Wrapper";
         return result;
@@ -677,7 +677,7 @@ QString ShibokenGenerator::cpythonBaseName(const TypeEntry* type)
     } else {
         baseName = "PyObject";
     }
-    return baseName.replace("::", "_");
+    return fixedCppTypeName(baseName);
 }
 
 QString ShibokenGenerator::cpythonTypeName(const AbstractMetaClass* metaClass)
@@ -748,7 +748,7 @@ QString ShibokenGenerator::fixedCppTypeName(const AbstractMetaType* type)
     return fixedCppTypeName(type->typeEntry(), type->cppSignature());
 }
 
-static QString _fixedCppTypeName(QString typeName)
+QString ShibokenGenerator::fixedCppTypeName(QString typeName)
 {
     return typeName.replace(" ",  "")
                    .replace(".",  "_")
@@ -765,7 +765,7 @@ QString ShibokenGenerator::fixedCppTypeName(const TypeEntry* type, QString typeN
         typeName = type->qualifiedCppName();
     if (!(type->codeGeneration() & TypeEntry::GenerateTargetLang))
         typeName.prepend(QString("%1_").arg(type->targetLangPackage()));
-    return _fixedCppTypeName(typeName);
+    return fixedCppTypeName(typeName);
 }
 
 QString ShibokenGenerator::pythonPrimitiveTypeName(const QString& cppTypeName)
@@ -2075,6 +2075,7 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
     if (typeString.startsWith("::"))
         typeString.remove(0, 2);
 
+    // Try regular types first
     QString adjustedTypeName = typeString;
     QStringList instantiatedTypes;
     int lpos = typeString.indexOf('<');
@@ -2101,9 +2102,8 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
 
     TypeEntry* typeEntry = TypeDatabase::instance()->findType(adjustedTypeName);
 
-    AbstractMetaType* metaType = 0;
     if (typeEntry) {
-        metaType = new AbstractMetaType();
+        AbstractMetaType* metaType = new AbstractMetaType();
         metaType->setTypeEntry(typeEntry);
         metaType->setIndirections(indirections);
         metaType->setReference(isReference);
@@ -2115,8 +2115,27 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
         }
         metaType->decideUsagePattern();
         m_metaTypeFromStringCache.insert(typeSignature, metaType);
+        return metaType;
     }
-    return metaType;
+
+    // If that fails, and the type is a template instantiation, try the unmodified
+    // type name, which will match template instantiation types
+    if (typeString != adjustedTypeName) {
+        if ((typeEntry = TypeDatabase::instance()->findType(typeString))) {
+            AbstractMetaType* metaType = new AbstractMetaType();
+            metaType->setTypeEntry(typeEntry);
+            metaType->setIndirections(indirections);
+            metaType->setReference(isReference);
+            metaType->setConstant(isConst);
+            metaType->setTypeUsagePattern(AbstractMetaType::ContainerPattern);
+            metaType->decideUsagePattern();
+            m_metaTypeFromStringCache.insert(typeSignature, metaType);
+            return metaType;
+        }
+    }
+
+    // Type was not found
+    return 0;
 }
 
 AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromTypeEntry(const TypeEntry* typeEntry)
@@ -2341,11 +2360,11 @@ QString ShibokenGenerator::convertersVariableName(const QString& moduleName) con
 
 static QString processInstantiationsVariableName(const AbstractMetaType* type)
 {
-    QString res = QString("_%1").arg(_fixedCppTypeName(type->typeEntry()->qualifiedCppName()).toUpper());
+    QString res = QString("_%1").arg(ShibokenGenerator::fixedCppTypeName(type->typeEntry()->qualifiedCppName()).toUpper());
     foreach (const AbstractMetaType* instantiation, type->instantiations()) {
         res += instantiation->isContainer()
                ? processInstantiationsVariableName(instantiation)
-               : QString("_%1").arg(_fixedCppTypeName(instantiation->cppSignature()).toUpper());
+               : QString("_%1").arg(ShibokenGenerator::fixedCppTypeName(instantiation->cppSignature()).toUpper());
     }
     return res;
 }
@@ -2355,7 +2374,7 @@ QString ShibokenGenerator::getTypeIndexVariableName(const AbstractMetaClass* met
         const AbstractMetaClass* templateBaseClass = metaClass->templateBaseClass();
         if (!templateBaseClass)
             return QString();
-        QString base = _fixedCppTypeName(templateBaseClass->typeEntry()->qualifiedCppName()).toUpper();
+        QString base = fixedCppTypeName(templateBaseClass->typeEntry()->qualifiedCppName()).toUpper();
         QString instantiations;
         foreach (const AbstractMetaType* instantiation, metaClass->templateBaseClassInstantiations())
             instantiations += processInstantiationsVariableName(instantiation);
@@ -2370,7 +2389,7 @@ QString ShibokenGenerator::getTypeIndexVariableName(const TypeEntry* type)
         if (trueType->basicAliasedTypeEntry())
             type = trueType->basicAliasedTypeEntry();
     }
-    return QString("SBK_%1_IDX").arg(_fixedCppTypeName(type->qualifiedCppName()).toUpper());
+    return QString("SBK_%1_IDX").arg(fixedCppTypeName(type->qualifiedCppName()).toUpper());
 }
 QString ShibokenGenerator::getTypeIndexVariableName(const AbstractMetaType* type)
 {

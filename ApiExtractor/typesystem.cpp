@@ -45,6 +45,8 @@ Handler::Handler(TypeDatabase* database, bool generate)
     m_ignoreDepth = 0;
 
     tagNames["rejection"] = StackElement::Rejection;
+    tagNames["type-template"] = StackElement::TypeTemplate;
+    tagNames["arg"] = StackElement::Argument;
     tagNames["custom-type"] = StackElement::CustomTypeEntry;
     tagNames["primitive-type"] = StackElement::PrimitiveTypeEntry;
     tagNames["container-type"] = StackElement::ContainerTypeEntry;
@@ -167,6 +169,9 @@ bool Handler::endElement(const QString &, const QString &localName, const QStrin
             }
         }
         break;
+    case StackElement::TypeTemplate:
+        m_database->addTypeTemplate(static_cast<TypeTemplateEntry *>(m_current->entry));
+        // fall through
     case StackElement::ObjectTypeEntry:
     case StackElement::ValueTypeEntry:
     case StackElement::InterfaceTypeEntry:
@@ -532,6 +537,8 @@ bool Handler::startElement(const QString &, const QString &n,
             attributes["deprecated"] = QString("no");
             attributes["hash-function"] = QString("");
             attributes["stream"] = QString("no");
+            attributes["template"] = QString();
+            attributes["args"] = QString();
             // fall throooough
         case StackElement::InterfaceTypeEntry:
             attributes["default-superclass"] = m_defaultSuperclass;
@@ -623,10 +630,59 @@ bool Handler::startElement(const QString &, const QString &n,
             name = element->parent->entry->name() + "::" + name;
         }
 
+        TypeTemplateEntry *typeTemplate = 0;
+        QStringList typeTemplateArgNames;
 
-        if (name.isEmpty()) {
-            m_error = "no 'name' attribute specified";
-            return false;
+        if (element->type == StackElement::ObjectTypeEntry || element->type == StackElement::ValueTypeEntry) {
+            QString typeTemplateName = attributes["template"];
+
+            if (!name.isEmpty() && !typeTemplateName.isEmpty()) {
+                m_error = "can't specify both 'name' and 'template' attributes";
+                return false;
+            }
+
+            if (typeTemplateName.isEmpty()) {
+                if (name.isEmpty()) {
+                    m_error = "no 'name' attribute specified";
+                    return false;
+                }
+
+                if (!attributes["args"].isEmpty()) {
+                    m_error = "'args' attribute may only be specified for template instantiation types";
+                    return false;
+                }
+            } else {
+                typeTemplate = m_database->findTypeTemplate(typeTemplateName);
+                if (!typeTemplate) {
+                    m_error = "there is no type-template named " + typeTemplateName;
+                    return false;
+                }
+
+                if (attributes["args"].isEmpty()) {
+                    m_error = "no 'args' attribute specified for template instantiation type";
+                    return false;
+                }
+
+                typeTemplateArgNames = attributes["args"].split(QRegExp(",\\s*"), QString::SkipEmptyParts);
+                if (typeTemplateArgNames.isEmpty()) {
+                    m_error = "invalid 'args' attribute";
+                    return false;
+                }
+
+                int xc = typeTemplate->args().count();
+                int ac = typeTemplateArgNames.count();
+                if (ac != xc) {
+                    m_error = QString("wrong number of args for template instantiation: expected %1, got %2").arg(xc).arg(ac);
+                    return false;
+                }
+
+                name = QString("%1< %2 >").arg(typeTemplateName, typeTemplateArgNames.join(","));
+            }
+        } else {
+            if (name.isEmpty()) {
+                m_error = "no 'name' attribute specified";
+                return false;
+            }
         }
 
         switch (element->type) {
@@ -753,7 +809,7 @@ bool Handler::startElement(const QString &, const QString &n,
         // fall through
         case StackElement::ValueTypeEntry: {
             if (!element->entry) {
-                ValueTypeEntry* typeEntry = new ValueTypeEntry(name, since);
+                ValueTypeEntry* typeEntry = new ValueTypeEntry(name, since, typeTemplate, typeTemplateArgNames);
                 QString defaultConstructor = attributes["default-constructor"];
                 if (!defaultConstructor.isEmpty())
                     typeEntry->setDefaultConstructor(defaultConstructor);
@@ -768,7 +824,7 @@ bool Handler::startElement(const QString &, const QString &n,
         // fall through
         case StackElement::ObjectTypeEntry:
             if (!element->entry)
-                element->entry = new ObjectTypeEntry(name, since);
+                element->entry = new ObjectTypeEntry(name, since, typeTemplate, typeTemplateArgNames);
 
             element->entry->setStream(attributes["stream"] == QString("yes"));
 
@@ -946,7 +1002,8 @@ bool Handler::startElement(const QString &, const QString &n,
                         || element->type == StackElement::ExtraIncludes
                         || element->type == StackElement::ConversionRule
                         || element->type == StackElement::AddFunction
-                        || element->type == StackElement::Template;
+                        || element->type == StackElement::Template
+                        || element->type == StackElement::TypeTemplate;
 
         if (!topLevel && m_current->type == StackElement::Root) {
             m_error = QString("Tag requires parent: '%1'").arg(tagName);
@@ -1070,6 +1127,12 @@ bool Handler::startElement(const QString &, const QString &n,
         case StackElement::Replace:
             attributes["from"] = QString();
             attributes["to"] = QString();
+            break;
+        case StackElement::TypeTemplate:
+            attributes["name"] = QString();
+            break;
+        case StackElement::Argument:
+            attributes["redirect"] = QString();
             break;
         case StackElement::ReferenceCount:
             attributes["action"] = QString();
@@ -1787,8 +1850,10 @@ bool Handler::startElement(const QString &, const QString &n,
                 element->entry->setInclude(inc);
             } else if (topElement.type == StackElement::ExtraIncludes) {
                 element->entry->addExtraInclude(inc);
+            } else if (topElement.type == StackElement::TypeTemplate) {
+                element->entry->setInclude(inc);
             } else {
-                m_error = "Only supported parent tags are primitive-type, complex types or extra-includes";
+                m_error = "Only supported parent tags are primitive-type, type-template, complex types or extra-includes";
                 return false;
             }
 
@@ -1814,6 +1879,23 @@ bool Handler::startElement(const QString &, const QString &n,
             m_database->addRejection(cls, function, field, enum_);
         }
         break;
+        case StackElement::TypeTemplate: {
+            QString name = attributes["name"];
+            if (name.isEmpty()) {
+                m_error = "no 'name' attribute specified";
+                return false;
+            }
+            element->entry = new TypeTemplateEntry(name, since);
+        }
+        break;
+        case StackElement::Argument: {
+            if (topElement.type != StackElement::TypeTemplate) {
+                m_error = "Can only specify arguments for type-template tag.";
+                return false;
+            }
+            TypeTemplateEntry *tentry = static_cast<TypeTemplateEntry *>(topElement.entry);
+            tentry->addArg(attributes["redirect"]);
+        }
         case StackElement::Template:
             element->value.templateEntry = new TemplateEntry(attributes["name"], since);
             break;

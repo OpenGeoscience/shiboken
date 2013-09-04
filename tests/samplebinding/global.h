@@ -38,6 +38,7 @@
 #include "photon.h"
 #include "point.h"
 #include "pointf.h"
+#include "pointer.h"
 #include "pointerholder.h"
 #include "polygon.h"
 #include "privatector.h"

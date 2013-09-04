@@ -54,6 +54,20 @@ static QString stripTemplateArgs(const QString &name)
     int pos = name.indexOf('<');
     return pos < 0 ? name : name.left(pos);
 }
+static QString canonicalizeInstantiationName(QString name) {
+    name.replace(QRegExp("<([^ ])"), "< \\1");
+    name.replace(QRegExp("([^ ])>"), "\\1 >");
+    return name;
+}
+
+static bool entryHasFunction(const ComplexTypeEntry *entry, const QString &signature)
+{
+    foreach (const FunctionModification &mod, entry->functionModifications()) {
+        if (mod.signature == signature)
+            return true;
+    }
+    return false;
+}
 
 AbstractMetaBuilder::AbstractMetaBuilder() : m_currentClass(0), m_logDirectory(QString('.')+QDir::separator())
 {
@@ -364,6 +378,25 @@ bool AbstractMetaBuilder::build(QIODevice* input)
     }
     ReportHandler::flush();
 
+    QList<ComplexTypeEntry *> instantiationTypes;
+    foreach (QList<TypeEntry*> entries, types->allEntries()) {
+        foreach (TypeEntry* entry, entries) {
+            if (entry->isTemplateInstantiation())
+                instantiationTypes << static_cast<ComplexTypeEntry *>(entry);
+        }
+    }
+
+    ReportHandler::setProgressReference(instantiationTypes);
+    foreach (ComplexTypeEntry *entry, instantiationTypes) {
+        ReportHandler::progress("Generating template instantiations model...");
+        AbstractMetaClass *cls = createInstantiationMetaClass(entry);
+        if (!cls)
+            continue;
+
+        addAbstractMetaClass(cls);
+    }
+    ReportHandler::flush();
+
     // We need to know all global enums
     QHash<QString, EnumModelItem> enumMap = m_dom->enumMap();
     ReportHandler::setProgressReference(enumMap);
@@ -410,6 +443,15 @@ bool AbstractMetaBuilder::build(QIODevice* input)
 
     foreach (NamespaceModelItem item, namespaceTypeValues)
         traverseNamespaceMembers(item);
+
+    // Resolve template instantiation argument types and create redirections
+    ReportHandler::setProgressReference(instantiationTypes);
+    foreach (ComplexTypeEntry *entry, instantiationTypes) {
+        ReportHandler::progress("Fixing template instantiations...");
+        AbstractMetaClass* cls = m_metaClasses.findClass(entry->qualifiedCppName());
+        traverseInstantiation(entry, cls);
+    }
+    ReportHandler::flush();
 
     // Global functions
     foreach (FunctionModelItem func, m_dom->functions()) {
@@ -1302,6 +1344,117 @@ void AbstractMetaBuilder::traverseFields(ScopeModelItem scope_item, AbstractMeta
     }
 }
 
+AbstractMetaClass* AbstractMetaBuilder::createInstantiationMetaClass(ComplexTypeEntry *entry)
+{
+    QString fullClassName = entry->name();
+
+    // Determine base classes
+    // TODO
+
+    AbstractMetaClass* metaClass = createMetaClass();
+    metaClass->setTypeEntry(entry);
+    *metaClass += AbstractMetaAttributes::Public;
+    if (entry->stream())
+        metaClass->setStream(true);
+
+    ReportHandler::debugSparse(QString("instantiation: '%1'").arg(metaClass->fullName()));
+
+    QStringList template_parameters = entry->templateArgNames();
+    QList<TypeEntry *> template_args;
+    template_args.clear();
+    for (int i = 0; i < template_parameters.size(); ++i) {
+        TemplateArgumentEntry *param_type = new TemplateArgumentEntry(template_parameters.at(i), entry->version());
+        param_type->setOrdinal(i);
+        template_args.append(param_type);
+    }
+    metaClass->setTemplateArguments(template_args);
+
+    // Set the default include file name
+    if (!entry->include().isValid())
+        setInclude(entry, entry->include().name());
+
+    fillAddedFunctions(metaClass);
+
+    return metaClass;
+}
+
+void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, AbstractMetaClass *metaClass)
+{
+    // Resolve type entries of template instantiation types
+    QList<const TypeEntry *> argTypeEntries;
+    QHash<int, AbstractMetaType *> argTypes;
+    int ordinal = 0;
+    foreach (QString argName, entry->templateArgNames()) {
+        TypeInfo argInfo;
+        argInfo.setQualifiedName(argName.split("::"));
+
+        bool ok = false;
+        AbstractMetaType *argType = translateType(argInfo, &ok);
+        if (ok) {
+            argTypes.insert(ordinal, argType);
+            argTypeEntries << argType->typeEntry();
+        } else {
+            ReportHandler::warning(QString("template parameter '%1' of '%2' is not known")
+                                  .arg(argName)
+                                  .arg(metaClass->name()));
+        }
+        ++ordinal;
+    }
+    entry->setTemplateArgTypes(argTypeEntries);
+
+    QList<TypeTemplateEntry::Argument> args = entry->templateType()->args();
+    Q_ASSERT(args.count() == ordinal);
+
+    // Set up redirections
+    foreach (ordinal, argTypes.keys()) {
+        const AbstractMetaType *argType = argTypes[ordinal];
+        QString accessor = args[ordinal].redirect();
+        if (!accessor.isEmpty()) {
+            AbstractMetaClass *argClass = m_metaClasses.findClass(argType->typeEntry()->qualifiedCppName());
+            if (argClass) {
+                foreach (AbstractMetaFunction *function, argClass->functions()) {
+                    if (!function->isStatic() && !function->isConstructor() && !function->isPrivate()) {
+                        QString signature = function->minimalSignature();
+                        if (signature.endsWith("const"))
+                            signature = signature.left((signature.length() - 5));
+
+                        // Generate meta function and add to meta class
+                        QString returnType = (function->type() ? function->type()->cppSignature() : QString("void"));
+                        bool isPublic = function->isPublic();
+                        AddedFunction addedFunction(signature, returnType, 0.0);
+                        addedFunction.setAccess(isPublic ? AddedFunction::Public : AddedFunction::Protected);
+                        addedFunction.setStatic(false);
+
+                        traverseFunction(addedFunction, metaClass);
+                        entry->addNewFunction(addedFunction);
+
+                        // If there is not a user-defined modification of this redirection, generate a default one
+                        if (!entryHasFunction(entry, signature)) {
+                            FunctionModification redirect(0.0);
+                            redirect.signature = signature;
+                            redirect.modifiers = (isPublic ? Modification::Public : Modification::Protected);
+                            redirect.modifiers |= Modification::CodeInjection;
+
+                            CodeSnip snip(0.0);
+                            if (function->type()) {
+                                snip.addCode("%RETURN_TYPE %0 = " + accessor + "%FUNCTION_NAME(%ARGUMENT_NAMES);\n");
+                                snip.addCode("%PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);\n");
+                            } else {
+                                snip.addCode(accessor + "%FUNCTION_NAME(%ARGUMENT_NAMES);\n");
+                            }
+                            snip.position = CodeSnip::Beginning;
+                            snip.language = TypeSystem::TargetLangCode;
+                            redirect.snips.append(snip);
+
+                            entry->addFunctionModification(redirect);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void AbstractMetaBuilder::setupFunctionDefaults(AbstractMetaFunction* metaFunction, AbstractMetaClass *metaClass)
 {
     // Set the default value of the declaring class. This may be changed
@@ -1981,6 +2134,10 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
         return 0;
 
     type = typeDb->findType(typeName);
+    if (!type)
+        type = typeDb->findType(canonicalizeInstantiationName(typeName));
+    if (!type)
+        type = TypeDatabase::instance()->findTypeTemplate(typeName);
 
     // test if the type is a template, like a container
     bool isTemplate = false;
@@ -1988,7 +2145,7 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
     if (!type) {
         QRegExp r("(.*)<(.*)>$");
         if (r.indexIn(typeInfo.name) != -1) {
-            templateArg = r.cap(2);
+            templateArg = r.cap(2).trimmed();
             if (templateArg.contains(','))
                 ReportHandler::warning("add-function tag doesn't support container types with more than one argument or template arguments.");
             else
@@ -2036,12 +2193,16 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
     return metaType;
 }
 
-static const TypeEntry* findTypeEntryUsingContext(const AbstractMetaClass* metaClass, const QString& qualifiedName)
+static const TypeEntry* findTypeEntryUsingContext(const AbstractMetaClass* metaClass, const QString& qualifiedName, const QString& instantiationName)
 {
     const TypeEntry* type = 0;
     QStringList context = metaClass->qualifiedCppName().split("::");
     while(!type && (context.size() > 0) ) {
-        type = TypeDatabase::instance()->findType(context.join("::") + "::" + qualifiedName);
+        const QString guess = context.join("::") + "::" + qualifiedName;
+        if ((type = TypeDatabase::instance()->findTypeTemplate(guess)))
+            type = TypeDatabase::instance()->findType(context.join("::") + "::" + instantiationName);
+        else
+            type = TypeDatabase::instance()->findType(guess);
         context.removeLast();
     }
     return type;
@@ -2155,12 +2316,13 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
 
     // 5.1 - Try first using the current scope
     if (m_currentClass) {
-        type = findTypeEntryUsingContext(m_currentClass, qualifiedName);
+        const QString& instantiationName = typeInfo.instantiationName();
+        type = findTypeEntryUsingContext(m_currentClass, qualifiedName, instantiationName);
 
         // 5.1.1 - Try using the class parents' scopes
         if (!type && !m_currentClass->baseClassNames().isEmpty()) {
             foreach (const AbstractMetaClass* cls, getBaseClasses(m_currentClass)) {
-                type = findTypeEntryUsingContext(cls, qualifiedName);
+                type = findTypeEntryUsingContext(cls, qualifiedName, instantiationName);
                 if (type)
                     break;
             }
@@ -2171,15 +2333,22 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
     if (!type)
         type = TypeDatabase::instance()->findType(qualifiedName);
 
-    // 6. No? Try looking it up as a flags type
+    // 6. No? Try looking it up as a template type
+    if (!type) {
+        type = TypeDatabase::instance()->findTypeTemplate(qualifiedName);
+        if (type)
+            type = TypeDatabase::instance()->findType(typeInfo.instantiationName());
+    }
+
+    // 7. No? Try looking it up as a flags type
     if (!type)
         type = TypeDatabase::instance()->findFlagsType(qualifiedName);
 
-    // 7. No? Try looking it up as a container type
+    // 8. No? Try looking it up as a container type
     if (!type)
         type = TypeDatabase::instance()->findContainerType(name);
 
-    // 8. No? Check if the current class is a template and this type is one
+    // 9. No? Check if the current class is a template and this type is one
     //    of the parameters.
     if (!type && m_currentClass) {
         QList<TypeEntry *> template_args = m_currentClass->templateArguments();
@@ -2189,8 +2358,8 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
         }
     }
 
-    // 9. Try finding the type by prefixing it with the current
-    //    context and all baseclasses of the current context
+    // 10. Try finding the type by prefixing it with the current
+    //     context and all baseclasses of the current context
     if (!type && !TypeDatabase::instance()->isClassRejected(qualifiedName) && m_currentClass && resolveScope) {
         QStringList contexts;
         contexts.append(m_currentClass->qualifiedCppName());
@@ -2203,7 +2372,7 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
             type = TypeDatabase::instance()->findType(contexts.at(0) + "::" + qualifiedName);
             contexts.pop_front();
 
-            // 10. Last resort: Special cased prefix of Qt namespace since the meta object implicitly inherits this, so
+            // 11. Last resort: Special cased prefix of Qt namespace since the meta object implicitly inherits this, so
             //     enum types from there may be addressed without any scope resolution in properties.
             if (!contexts.size() && !subclassesDone) {
                 contexts << "Qt";
@@ -2231,22 +2400,24 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
     metaType->setConstant(typeInfo.is_constant);
     metaType->setOriginalTypeDescription(_typei.toString());
 
-    foreach (const TypeParser::Info &ta, typeInfo.template_instantiations) {
-        TypeInfo info;
-        info.setConstant(ta.is_constant);
-        info.setReference(ta.is_reference);
-        info.setIndirections(ta.indirections);
+    if (!type->isTemplateInstantiation()) {
+        foreach (const TypeParser::Info &ta, typeInfo.template_instantiations) {
+            TypeInfo info;
+            info.setConstant(ta.is_constant);
+            info.setReference(ta.is_reference);
+            info.setIndirections(ta.indirections);
 
-        info.setFunctionPointer(false);
-        info.setQualifiedName(ta.instantiationName().split("::"));
+            info.setFunctionPointer(false);
+            info.setQualifiedName(ta.instantiationName().split("::"));
 
-        AbstractMetaType* targType = translateType(info, ok);
-        if (!(*ok)) {
-            delete metaType;
-            return 0;
+            AbstractMetaType* targType = translateType(info, ok);
+            if (!(*ok)) {
+                delete metaType;
+                return 0;
+            }
+
+            metaType->addInstantiation(targType, true);
         }
-
-        metaType->addInstantiation(targType, true);
     }
 
     // The usage pattern *must* be decided *after* the possible template
