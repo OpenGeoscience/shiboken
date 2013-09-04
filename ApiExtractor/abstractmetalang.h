@@ -325,8 +325,17 @@ public:
     }
     QString name() const
     {
-        if (m_name.isNull())
-            m_name = m_typeEntry->targetLangName().split("::").last();
+        if (m_name.isNull()) {
+            const QString& tlName = m_typeEntry->targetLangName();
+            QStringList templateParts = tlName.split('<');
+            if (templateParts.count() > 1) {
+                QString& templateBaseName = templateParts[0];
+                templateBaseName = templateBaseName.split("::").last();
+                m_name = templateParts.join("<");
+            } else {
+                m_name = QString(tlName).split("::").last();
+            }
+        }
         return m_name;
     }
     QString fullName() const
