@@ -1413,7 +1413,7 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
             AbstractMetaClass *argClass = m_metaClasses.findClass(argType->typeEntry()->qualifiedCppName());
             if (argClass) {
                 foreach (AbstractMetaFunction *function, argClass->functions()) {
-                    if (!function->isStatic() && !function->isConstructor() && !function->isPrivate()) {
+                    if (!function->isStatic() && !function->isConstructor() && function->isPublic()) {
                         QString signature = function->minimalSignature();
                         if (signature.endsWith("const"))
                             signature = signature.left((signature.length() - 5));
@@ -1422,7 +1422,7 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
                         QString returnType = (function->type() ? function->type()->cppSignature() : QString("void"));
                         bool isPublic = function->isPublic();
                         AddedFunction addedFunction(signature, returnType, 0.0);
-                        addedFunction.setAccess(isPublic ? AddedFunction::Public : AddedFunction::Protected);
+                        addedFunction.setAccess(AddedFunction::Public);
                         addedFunction.setStatic(false);
 
                         traverseFunction(addedFunction, metaClass);
@@ -1432,7 +1432,7 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
                         if (!entryHasFunction(entry, signature)) {
                             FunctionModification redirect(0.0);
                             redirect.signature = signature;
-                            redirect.modifiers = (isPublic ? Modification::Public : Modification::Protected);
+                            redirect.modifiers = Modification::Public;
                             redirect.modifiers |= Modification::CodeInjection;
 
                             CodeSnip snip(0.0);
