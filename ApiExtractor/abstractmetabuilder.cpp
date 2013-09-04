@@ -60,6 +60,40 @@ static QString canonicalizeInstantiationName(QString name) {
     return name;
 }
 
+static QStringList parseTemplateType(const QString& name) {
+    int n = name.indexOf('<');
+    if (n <= 0) {
+        if (n == 0 || name.count("<") != name.count(">"))
+            return QStringList();
+        return QStringList() << name;
+    }
+
+    QStringList result;
+    result << name.left(n).trimmed();
+
+    int i, depth = 1;
+    const int l = name.length();
+    for (i = n + 1; i < l; ++i) {
+        if (name[i] == '<') {
+            ++depth;
+        } else if (name[i] == '>') {
+            if (--depth == 0)
+                break;
+        } else if (name[i] == ',' && depth == 1) {
+            result << name.mid(n + 1, i - n - 1).trimmed();
+            n = i;
+        }
+    }
+    // foo<bar>   n=3, i=7
+    if (i >= l) // arg list not closed
+        return QStringList();
+    if (i + 1 < l) // arg list closed before end of name
+        return QStringList();
+
+    result << name.mid(n + 1, i - n - 1).trimmed();
+    return result;
+}
+
 static bool entryHasFunction(const ComplexTypeEntry *entry, const QString &signature)
 {
     foreach (const FunctionModification &mod, entry->functionModifications()) {
@@ -2141,15 +2175,14 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
 
     // test if the type is a template, like a container
     bool isTemplate = false;
-    QString templateArg;
-    if (!type) {
-        QRegExp r("(.*)<(.*)>$");
-        if (r.indexIn(typeInfo.name) != -1) {
-            templateArg = r.cap(2).trimmed();
-            if (templateArg.contains(','))
-                ReportHandler::warning("add-function tag doesn't support container types with more than one argument or template arguments.");
-            else
-                isTemplate = (type = typeDb->findContainerType(r.cap(1)));
+    QStringList templateArgs;
+    if (!type && typeInfo.name.contains('<')) {
+        const QStringList& parsedType = parseTemplateType(typeInfo.name);
+        if (parsedType.count() == 0) {
+            ReportHandler::warning(QString("horribly broken type '%1'").arg(typeInfo.name));
+        } else {
+            templateArgs = parsedType.mid(1);
+            isTemplate = (type = typeDb->findContainerType(parsedType[0]));
         }
     }
 
@@ -2181,13 +2214,11 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
     metaType->setReference(typeInfo.isReference);
     metaType->setConstant(typeInfo.isConstant);
     if (isTemplate) {
-        type = typeDb->findType(templateArg);
-        if (type) {
-            AbstractMetaType* metaArgType = createMetaType();
-            metaArgType->setTypeEntry(type);
+        foreach (const QString& templateArg, templateArgs) {
+            AbstractMetaType* metaArgType = translateType(vr, AddedFunction::TypeInfo::fromSignature(templateArg));
             metaType->addInstantiation(metaArgType);
-            metaType->setTypeUsagePattern(AbstractMetaType::ContainerPattern);
         }
+        metaType->setTypeUsagePattern(AbstractMetaType::ContainerPattern);
     }
 
     return metaType;
