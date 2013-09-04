@@ -283,16 +283,10 @@ const AbstractMetaClass* ShibokenGenerator::getProperEnclosingClassForEnum(const
 
 QString ShibokenGenerator::wrapperName(const AbstractMetaClass* metaClass) const
 {
-    if (shouldGenerateCppWrapper(metaClass)) {
-        QString result = metaClass->name();
-        if (metaClass->enclosingClass()) // is a inner class
-            result = fixedCppTypeName(result);
-
-        result +="Wrapper";
-        return result;
-    } else {
+    if (shouldGenerateCppWrapper(metaClass))
+        return fixedCppTypeName(metaClass->name()) + "Wrapper";
+    else
         return metaClass->qualifiedCppName();
-    }
 }
 
 QString ShibokenGenerator::fullPythonFunctionName(const AbstractMetaFunction* func)
