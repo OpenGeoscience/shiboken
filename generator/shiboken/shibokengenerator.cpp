@@ -284,7 +284,7 @@ const AbstractMetaClass* ShibokenGenerator::getProperEnclosingClassForEnum(const
 QString ShibokenGenerator::wrapperName(const AbstractMetaClass* metaClass) const
 {
     if (shouldGenerateCppWrapper(metaClass))
-        return fixedCppTypeName(metaClass->name()) + "Wrapper";
+        return fixedCppTypeName(metaClass->qualifiedCppName()) + "Wrapper";
     else
         return metaClass->qualifiedCppName();
 }
