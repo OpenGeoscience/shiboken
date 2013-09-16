@@ -264,6 +264,7 @@ bool Handler::endElement(const QString &, const QString &localName, const QStrin
     }
 
     if (m_current->type == StackElement::Root
+        || m_current->type == StackElement::TypeTemplate
         || m_current->type == StackElement::NamespaceTypeEntry
         || m_current->type == StackElement::InterfaceTypeEntry
         || m_current->type == StackElement::ObjectTypeEntry
@@ -495,6 +496,7 @@ bool Handler::startElement(const QString &, const QString &n,
         customConversionsForReview.clear();
 
     if (element->type == StackElement::Root
+        || element->type == StackElement::TypeTemplate
         || element->type == StackElement::NamespaceTypeEntry
         || element->type == StackElement::InterfaceTypeEntry
         || element->type == StackElement::ObjectTypeEntry

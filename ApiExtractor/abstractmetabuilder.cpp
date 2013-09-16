@@ -1374,6 +1374,8 @@ AbstractMetaClass* AbstractMetaBuilder::createInstantiationMetaClass(ComplexType
         setInclude(entry, entry->include().name());
 
     fillAddedFunctions(metaClass);
+    foreach (AddedFunction addedFunc, metaClass->typeEntry()->templateType()->addedFunctions())
+        traverseFunction(addedFunc, metaClass);
 
     return metaClass;
 }
