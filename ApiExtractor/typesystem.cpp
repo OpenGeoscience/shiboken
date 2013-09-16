@@ -1134,6 +1134,7 @@ bool Handler::startElement(const QString &, const QString &n,
             break;
         case StackElement::Argument:
             attributes["redirect"] = QString();
+            attributes["wraps-pointer-as"] = QString();
             break;
         case StackElement::ReferenceCount:
             attributes["action"] = QString();
@@ -1895,7 +1896,18 @@ bool Handler::startElement(const QString &, const QString &n,
                 return false;
             }
             TypeTemplateEntry *tentry = static_cast<TypeTemplateEntry *>(topElement.entry);
-            tentry->addArg(attributes["redirect"]);
+            const QString &wrapsPointerAs = attributes["wraps-pointer-as"];
+            QString redirect = attributes["redirect"];
+            if (!wrapsPointerAs.isEmpty()) {
+                if (!tentry->wrapsPointerAs().isEmpty()) {
+                    m_error = "Template types can only wrap a single type argument as a pointer.";
+                    return false;
+                }
+                tentry->setWrapsPointerAs(wrapsPointerAs);
+                if (redirect.isEmpty())
+                    redirect = wrapsPointerAs + "->";
+            }
+            tentry->addArg(redirect);
         }
         case StackElement::Template:
             element->value.templateEntry = new TemplateEntry(attributes["name"], since);
