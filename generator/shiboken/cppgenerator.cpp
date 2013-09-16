@@ -989,6 +989,16 @@ void CppGenerator::writeConverterFunctions(QTextStream& s, const AbstractMetaCla
         }
         c << INDENT << '}' << endl;
         c << INDENT << "const char* typeName = typeid(*((" << typeName << "*)cppIn)).name();" << endl;
+        const TypeTemplateEntry *typeTemplate = metaClass->typeEntry()->templateType();
+        if (typeTemplate && !typeTemplate->wrapsPointerAs().isEmpty())
+        {
+            c << INDENT << "if (*reinterpret_cast< " << typeName << "* >(cppIn)) {" << endl;
+            {
+                Indentation indent(INDENT);
+                c << INDENT << "Py_RETURN_NONE;" << endl;
+            }
+            c << INDENT << "}" << endl;
+        }
         c << INDENT << "return Shiboken::Object::newObject(&" << cpythonType;
         c << ", const_cast<void*>(cppIn), false, false, typeName);";
     }

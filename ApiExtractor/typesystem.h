@@ -1793,6 +1793,16 @@ public:
         return m_args;
     }
 
+    QString wrapsPointerAs() const
+    {
+        return m_wrapsPointerAs;
+    }
+
+    void setWrapsPointerAs(const QString &wrapsPointerAs)
+    {
+        m_wrapsPointerAs = wrapsPointerAs;
+    }
+
     void addArg(const QString &redirect)
     {
         m_args << Argument(redirect);
@@ -1800,6 +1810,7 @@ public:
 
 private:
     QList<Argument> m_args;
+    QString m_wrapsPointerAs;
 };
 
 typedef QHash<QString, TypeTemplateEntry *> TypeTemplateEntryHash;
