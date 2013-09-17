@@ -1422,8 +1422,6 @@ AbstractMetaClass* AbstractMetaBuilder::createInstantiationMetaClass(ComplexType
         setInclude(entry, entry->include().name());
 
     fillAddedFunctions(metaClass);
-    foreach (AddedFunction addedFunc, metaClass->typeEntry()->templateType()->addedFunctions())
-        traverseFunction(addedFunc, metaClass);
 
     return metaClass;
 }
@@ -1454,6 +1452,10 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
 
     QList<TypeTemplateEntry::Argument> args = entry->templateType()->args();
     Q_ASSERT(args.count() == ordinal);
+
+    // Add functions from the type template
+    foreach (AddedFunction addedFunc, metaClass->typeEntry()->templateType()->addedFunctions())
+        traverseFunction(addedFunc, metaClass, argTypes);
 
     // Set up redirections
     foreach (ordinal, argTypes.keys()) {
@@ -1881,12 +1883,8 @@ void AbstractMetaBuilder::traverseEnums(ScopeModelItem scopeItem, AbstractMetaCl
     }
 }
 
-AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(const AddedFunction& addedFunc)
-{
-    return traverseFunction(addedFunc, 0);
-}
-
-AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(const AddedFunction& addedFunc, AbstractMetaClass* metaClass)
+AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(const AddedFunction& addedFunc, AbstractMetaClass* metaClass,
+                                                            const QHash<int, AbstractMetaType *> &templateArgs)
 {
     AbstractMetaFunction* metaFunction = createMetaFunction();
     metaFunction->setConstant(addedFunc.isConstant());
@@ -1897,7 +1895,7 @@ AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(const AddedFunction&
     metaFunction->setUserAdded(true);
     AbstractMetaAttributes::Attribute isStatic = addedFunc.isStatic() ? AbstractMetaFunction::Static : AbstractMetaFunction::None;
     metaFunction->setAttributes(metaFunction->attributes() | AbstractMetaAttributes::Final | isStatic);
-    metaFunction->setType(translateType(addedFunc.version(), addedFunc.returnType()));
+    metaFunction->setType(translateType(addedFunc.version(), addedFunc.returnType(), templateArgs));
 
 
     QList<AddedFunction::TypeInfo> args = addedFunc.arguments();
@@ -1906,7 +1904,7 @@ AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(const AddedFunction&
     for (int i = 0; i < args.count(); ++i) {
         AddedFunction::TypeInfo& typeInfo = args[i];
         AbstractMetaArgument* metaArg = createMetaArgument();
-        AbstractMetaType* type = translateType(addedFunc.version(), typeInfo);
+        AbstractMetaType* type = translateType(addedFunc.version(), typeInfo, templateArgs);
         decideUsagePattern(type);
         metaArg->setType(type);
         metaArg->setArgumentIndex(i);
@@ -2262,6 +2260,35 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
     }
 
     return metaType;
+}
+
+AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunction::TypeInfo& typeInfo, const QHash< int, AbstractMetaType* >& templateArgs)
+{
+    if (!templateArgs.isEmpty()) {
+        // Resolve references to template argument types
+        QHash<int, AbstractMetaType *>::const_iterator iter, end = templateArgs.constEnd();
+        for (iter = templateArgs.begin(); iter != end; ++iter) {
+            if (typeInfo.name == QString("%INTYPE_%1").arg(iter.key())) {
+                if (iter.value()) {
+                    // Make a copy of the template argument type, and set appropriate indirections
+                    AbstractMetaType* metaType = createMetaType();
+                    metaType->setTypeEntry(iter.value()->typeEntry());
+                    metaType->setIndirections(typeInfo.indirections);
+                    metaType->setReference(typeInfo.isReference);
+                    metaType->setConstant(typeInfo.isConstant);
+                    foreach (AbstractMetaType* instantation, iter.value()->instantiations()) {
+                        AbstractMetaType* metaArgType = createMetaType();
+                        metaArgType->setTypeEntry(instantation->typeEntry());
+                        metaType->addInstantiation(metaArgType);
+                    }
+                    metaType->setTypeUsagePattern(iter.value()->typeUsagePattern());
+                    return metaType;
+                }
+                return 0; // type is 'void'
+            }
+        }
+    }
+    return translateType(vr, typeInfo);
 }
 
 static const TypeEntry* findTypeEntryUsingContext(const AbstractMetaClass* metaClass, const QString& qualifiedName, const QString& instantiationName)
