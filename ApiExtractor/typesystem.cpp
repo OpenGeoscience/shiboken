@@ -2196,7 +2196,7 @@ bool FunctionModification::operator==(const FunctionModification& other) const
 static AddedFunction::TypeInfo parseType(const QString& signature, int startPos = 0, int* endPos = 0)
 {
     AddedFunction::TypeInfo result;
-    QRegExp regex("\\w");
+    QRegExp regex("%?\\w");
     int length = signature.length();
     int start = signature.indexOf(regex, startPos);
     if (start == -1) {

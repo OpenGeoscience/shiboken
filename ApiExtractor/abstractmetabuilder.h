@@ -119,8 +119,8 @@ public:
     void traverseFields(ScopeModelItem item, AbstractMetaClass *parent);
     void traverseStreamOperator(FunctionModelItem functionItem);
     void traverseOperatorFunction(FunctionModelItem item);
-    AbstractMetaFunction* traverseFunction(const AddedFunction& addedFunc);
-    AbstractMetaFunction* traverseFunction(const AddedFunction& addedFunc, AbstractMetaClass* metaClass);
+    AbstractMetaFunction* traverseFunction(const AddedFunction& addedFunc, AbstractMetaClass* metaClass = 0,
+                                           const QHash<int, AbstractMetaType *> &templateArgs = QHash<int, AbstractMetaType *>());
     AbstractMetaFunction *traverseFunction(FunctionModelItem function);
     AbstractMetaField *traverseField(VariableModelItem field, const AbstractMetaClass *cls);
     void checkFunctionModifications();
@@ -150,6 +150,7 @@ public:
                                   AbstractMetaFunction *fnc, AbstractMetaClass *,
                                   int argumentIndex);
     AbstractMetaType* translateType(double vr, const AddedFunction::TypeInfo& typeInfo);
+    AbstractMetaType* translateType(double vr, const AddedFunction::TypeInfo& typeInfo, const QHash<int, AbstractMetaType *> &templateArgs);
     AbstractMetaType *translateType(const TypeInfo &type, bool *ok, bool resolveType = true, bool resolveScope = true);
 
     int findOutValueFromString(const QString& stringValue, bool& ok);
