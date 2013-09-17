@@ -1405,9 +1405,31 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
     QList<TypeTemplateEntry::Argument> args = entry->templateType()->args();
     Q_ASSERT(args.count() == ordinal);
 
-    // Add functions from the type template
-    foreach (AddedFunction addedFunc, metaClass->typeEntry()->templateType()->addedFunctions())
-        traverseFunction(addedFunc, metaClass, argTypes);
+    // Add functions and modifications from the type template
+    foreach (AddedFunction addedFunction, metaClass->typeEntry()->templateType()->addedFunctions())
+        traverseFunction(addedFunction, metaClass, argTypes);
+
+    foreach (FunctionModification modification, metaClass->typeEntry()->templateType()->functionModifications()) {
+        FunctionModification resolvedModification(modification);
+        resolvedModification.snips.clear();
+
+        // Resolve template types in code snips
+        foreach (const CodeSnip &snip, modification.snips) {
+            CodeSnip resolvedSnip(snip);
+            resolvedSnip.codeList.clear();
+
+            QString code = snip.code();
+            QHash<int, AbstractMetaType *>::const_iterator iter, end = argTypes.constEnd();
+            for (iter = argTypes.begin(); iter != end; ++iter) {
+                code.replace(QRegExp(QString("%INTYPE_%1\\b").arg(iter.key())),
+                             iter.value()->typeEntry()->qualifiedCppName());
+            }
+
+            resolvedSnip.addCode(code);
+            resolvedModification.snips.append(resolvedSnip);
+        }
+        entry->addFunctionModification(resolvedModification);
+    }
 
     // Set up redirections
     foreach (ordinal, argTypes.keys()) {
