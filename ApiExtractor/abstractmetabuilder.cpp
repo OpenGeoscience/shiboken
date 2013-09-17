@@ -1477,7 +1477,6 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
                         addedFunction.setStatic(false);
 
                         traverseFunction(addedFunction, metaClass);
-                        entry->addNewFunction(addedFunction);
 
                         // If there is not a user-defined modification of this redirection, generate a default one
                         if (!entryHasFunction(entry, signature)) {
