@@ -2398,6 +2398,19 @@
 
     <type-template name="Pointer">
         <arg redirect="%CPPSELF-&gt;get()-&gt;"/>
+        <add-function signature="template_get()" return-type="%INTYPE_0*">
+            <inject-code>
+                %RETURN_TYPE %0 = %CPPSELF->get();
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </add-function>
+        <add-function signature="valid()" return-type="bool">
+            <inject-code>
+                %INTYPE_0* ptr = %CPPSELF->get();
+                %RETURN_TYPE %0 = !!ptr;
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </add-function>
     </type-template>
     <object-type name="SimpleObject"/>
     <value-type template="Pointer" args="SimpleObject">
