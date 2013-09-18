@@ -992,7 +992,8 @@ void CppGenerator::writeConverterFunctions(QTextStream& s, const AbstractMetaCla
         const TypeTemplateEntry *typeTemplate = metaClass->typeEntry()->templateType();
         if (typeTemplate && !typeTemplate->wrapsPointerAs().isEmpty())
         {
-            c << INDENT << "if (*reinterpret_cast< " << typeName << "* >(cppIn)) {" << endl;
+            const QString &cppSelfCode = QString("(reinterpret_cast< const %1 * >(cppIn))").arg(typeName);
+            c << INDENT << "if (" << typeTemplate->wrapsPointerAs().replace("%CPPSELF", cppSelfCode) << ") {" << endl;
             {
                 Indentation indent(INDENT);
                 c << INDENT << "Py_RETURN_NONE;" << endl;
