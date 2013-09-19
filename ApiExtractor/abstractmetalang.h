@@ -1574,6 +1574,8 @@ public:
         return package() + "." + name();
     }
 
+    static QString canonicalizeInstantiationName(QString);
+
     /**
      *   Retrieves the class name without any namespace/scope information.
      *   /return the class name without scope information

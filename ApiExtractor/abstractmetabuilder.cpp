@@ -54,11 +54,6 @@ static QString stripTemplateArgs(const QString &name)
     int pos = name.indexOf('<');
     return pos < 0 ? name : name.left(pos);
 }
-static QString canonicalizeInstantiationName(QString name) {
-    name.replace(QRegExp("<([^ ])"), "< \\1");
-    name.replace(QRegExp("([^ ])>"), "\\1 >");
-    return name;
-}
 
 static bool entryHasFunction(const ComplexTypeEntry *entry, const QString &signature)
 {
@@ -2177,7 +2172,7 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
 
     type = typeDb->findType(typeName);
     if (!type)
-        type = typeDb->findType(canonicalizeInstantiationName(typeName));
+        type = typeDb->findType(AbstractMetaClass::canonicalizeInstantiationName(typeName));
     if (!type)
         type = TypeDatabase::instance()->findTypeTemplate(typeName);
 
