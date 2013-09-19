@@ -2105,6 +2105,11 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
         metaType->setTypeUsagePattern(AbstractMetaType::ContainerPattern);
         foreach (const QString& instantiation, instantiatedTypes) {
             AbstractMetaType* tmplArgType = buildAbstractMetaTypeFromString(instantiation);
+            if (!tmplArgType) {
+                qFatal(qPrintable(QString("Could not find template argument type '%1' in type '%2'. "
+                                          "Make sure to use the full C++ name, e.g. 'Namespace::Class'.")
+                                     .arg(instantiation).arg(typeSignature)), NULL);
+            }
             metaType->addInstantiation(tmplArgType);
         }
         metaType->decideUsagePattern();
@@ -2115,7 +2120,7 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
     // If that fails, and the type is a template instantiation, try the unmodified
     // type name, which will match template instantiation types
     if (typeString != adjustedTypeName) {
-        if ((typeEntry = TypeDatabase::instance()->findType(typeString))) {
+        if ((typeEntry = TypeDatabase::instance()->findType(AbstractMetaClass::canonicalizeInstantiationName(typeString)))) {
             AbstractMetaType* metaType = new AbstractMetaType();
             metaType->setTypeEntry(typeEntry);
             metaType->setIndirections(indirections);
