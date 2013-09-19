@@ -2375,6 +2375,7 @@
             </inject-code>
         </add-function>
     </type-template>
+    <object-type name="SimpleObjectBase"/>
     <object-type name="SimpleObject"/>
     <value-type template="Pointer" args="SimpleObject">
         <add-function signature="get()" return-type="SimpleObject*">

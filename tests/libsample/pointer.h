@@ -74,10 +74,19 @@ private:
     int *m_ref;
 };
 
+class SimpleObjectBase
+{
+public:
+    inline int square(int value) { return value * value; }
+
+protected:
+    SimpleObjectBase() {}
+};
+
 class SimpleObject;
 typedef Pointer<SimpleObject> SimpleObjectPointer;
 
-class LIBSAMPLE_API SimpleObject
+class LIBSAMPLE_API SimpleObject : public SimpleObjectBase
 {
 public:
     ~SimpleObject();
