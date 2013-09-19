@@ -41,6 +41,7 @@ class TestPointer(unittest.TestCase):
         o1 = SimpleObject.create()
         o2 = SimpleObject.create()
         self.assertGreater(o2.id(), o1.id())
+        self.assertEqual(o1.square(2), 4)
 
     def testAddedMethods(self):
         '''Test method redirection on template pointer class.'''

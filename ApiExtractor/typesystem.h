@@ -1670,15 +1670,6 @@ public:
         return m_templateType;
     }
 
-    void setTemplateArgTypes(QList<const TypeEntry*> templateArgs)
-    {
-        m_templateArgTypes = templateArgs;
-    }
-    QList<const TypeEntry*> templateArgTypes() const
-    {
-        return m_templateArgTypes;
-    }
-
     QString defaultConstructor() const;
     void setDefaultConstructor(const QString& defaultConstructor);
     bool hasDefaultConstructor() const;
@@ -1710,7 +1701,6 @@ private:
     QStringList m_templateArgNames;
 
     const TypeTemplateEntry *m_templateType;
-    QList<const TypeEntry*> m_templateArgTypes;
 };
 
 class ContainerTypeEntry : public ComplexTypeEntry
