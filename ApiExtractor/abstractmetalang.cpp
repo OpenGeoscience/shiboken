@@ -1469,6 +1469,13 @@ bool AbstractMetaClass::hasSignal(const AbstractMetaFunction *other) const
     return false;
 }
 
+QString AbstractMetaClass::canonicalizeInstantiationName(QString name)
+{
+    name.replace(QRegExp("\\s+"), " ");
+    name.replace(QRegExp("<([^ ])"), "< \\1");
+    name.replace(QRegExp("([^ ])>"), "\\1 >");
+    return name;
+}
 
 QString AbstractMetaClass::name() const
 {
@@ -1477,7 +1484,7 @@ QString AbstractMetaClass::name() const
     if (templateParts.count() > 1) {
         QString& templateBaseName = templateParts[0];
         templateBaseName = templateBaseName.split("::").last();
-        return templateParts.join("<");
+        return canonicalizeInstantiationName(templateParts.join("<"));
     } else {
         return QString(tlName).split("::").last();
     }

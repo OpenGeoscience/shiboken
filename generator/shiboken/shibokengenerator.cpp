@@ -2115,7 +2115,7 @@ AbstractMetaType* ShibokenGenerator::buildAbstractMetaTypeFromString(QString typ
     // If that fails, and the type is a template instantiation, try the unmodified
     // type name, which will match template instantiation types
     if (typeString != adjustedTypeName) {
-        if ((typeEntry = TypeDatabase::instance()->findType(typeString))) {
+        if ((typeEntry = TypeDatabase::instance()->findType(AbstractMetaClass::canonicalizeInstantiationName(typeString)))) {
             AbstractMetaType* metaType = new AbstractMetaType();
             metaType->setTypeEntry(typeEntry);
             metaType->setIndirections(indirections);
