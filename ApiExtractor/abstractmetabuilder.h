@@ -104,6 +104,7 @@ public:
     void addAbstractMetaClass(AbstractMetaClass *cls);
     AbstractMetaClass *createInstantiationMetaClass(ComplexTypeEntry *entry);
     void traverseInstantiation(ComplexTypeEntry *entry, AbstractMetaClass *metaClass);
+    void addRedirections(ComplexTypeEntry *entry, AbstractMetaClass* metaClass, AbstractMetaClass* fromClass, const QString &accessor);
     AbstractMetaClass *traverseTypeAlias(TypeAliasModelItem item);
     AbstractMetaClass *traverseClass(ClassModelItem item);
     AbstractMetaClass* currentTraversedClass(ScopeModelItem item);
