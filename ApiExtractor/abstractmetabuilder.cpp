@@ -98,6 +98,15 @@ static bool entryHasFunction(const ComplexTypeEntry *entry, const QString &signa
     return false;
 }
 
+static bool classHasFunction(const AbstractMetaClass *metaClass, const QString &minimalSignature)
+{
+    foreach (const AbstractMetaFunction *function, metaClass->functions()) {
+        if (function->minimalSignature() == minimalSignature)
+            return true;
+    }
+    return false;
+}
+
 AbstractMetaBuilder::AbstractMetaBuilder() : m_currentClass(0), m_logDirectory(QString('.')+QDir::separator())
 {
 }
@@ -1481,20 +1490,16 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
 
 void AbstractMetaBuilder::addRedirections(ComplexTypeEntry *entry, AbstractMetaClass* metaClass, AbstractMetaClass* fromClass, const QString &accessor)
 {
-    // Add redirections from the class's primary base class
-    if (fromClass->baseClass())
-        addRedirections(entry, metaClass, fromClass->baseClass(), accessor);
-
-    // Add redirections from the class's interfaces
-    foreach (AbstractMetaClass *iface, fromClass->interfaces())
-        addRedirections(entry, metaClass, iface, accessor);
-
     // Add redirections from the class itself
     foreach (AbstractMetaFunction *function, fromClass->functions()) {
         if (!function->isStatic() && !function->isConstructor() && function->isPublic()) {
             QString signature = function->minimalSignature();
             if (signature.endsWith("const"))
                 signature = signature.left((signature.length() - 5));
+
+            // Skip function if it already exists (e.g. overloaded virtuals or shadowed methods)
+            if (classHasFunction(metaClass, signature))
+                continue;
 
             // Generate meta function and add to meta class
             QString returnType = (function->type() ? function->type()->cppSignature() : QString("void"));
@@ -1526,6 +1531,14 @@ void AbstractMetaBuilder::addRedirections(ComplexTypeEntry *entry, AbstractMetaC
             }
         }
     }
+
+    // Add redirections from the class's primary base class
+    if (fromClass->baseClass())
+        addRedirections(entry, metaClass, fromClass->baseClass(), accessor);
+
+    // Add redirections from the class's interfaces
+    foreach (AbstractMetaClass *iface, fromClass->interfaces())
+        addRedirections(entry, metaClass, iface, accessor);
 }
 
 void AbstractMetaBuilder::setupFunctionDefaults(AbstractMetaFunction* metaFunction, AbstractMetaClass *metaClass)
