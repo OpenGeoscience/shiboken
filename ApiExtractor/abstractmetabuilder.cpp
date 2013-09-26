@@ -1441,6 +1441,7 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
         ++ordinal;
     }
 
+    bool wrapsPointer = !entry->templateType()->wrapsPointerAs().isEmpty();
     QList<TypeTemplateEntry::Argument> args = entry->templateType()->args();
     Q_ASSERT(args.count() == argTypes.count());
 
@@ -1484,6 +1485,28 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
             }
 
             addRedirections(entry, metaClass, argClass, accessor);
+
+            if (wrapsPointer
+                && entry->templateType()->wrapsPointerArg() == ordinal
+                && !argClass->baseClassName().isEmpty()) {
+                QStringList argList = parseTemplateType(metaClass->name());
+                QString templateClass = argList.takeFirst();
+                argList[ordinal] = argClass->baseClass()->qualifiedCppName();
+                QString baseTemplateClass = QString("%1< %2 >").arg(templateClass).arg(argList.join(", "));
+
+                AbstractMetaClass* baseMetaClass = m_metaClasses.findClass(baseTemplateClass);
+
+                if (baseMetaClass) {
+                    if (metaClass->baseClass())
+                        metaClass->addBaseClassName(baseTemplateClass);
+                    else
+                        metaClass->setBaseClass(baseMetaClass);
+                } else {
+                    QString warn = QString("want to inherit %1 from same class with arg %2 replaced with %3, but it is an unknown type.")
+                                    .arg(metaClass->name()).arg(ordinal).arg(argClass->baseClass()->qualifiedCppName());
+                    ReportHandler::warning(warn);
+                }
+            }
         }
     }
 }
