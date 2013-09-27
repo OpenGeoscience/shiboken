@@ -37,6 +37,7 @@ class TypeDatabase;
 class AbstractMetaBuilder
 {
 public:
+    typedef QHash<int, AbstractMetaType *> IntAbstractMetaHash;
     enum RejectReason {
         NotInTypeSystem,
         GenerationDisabled,
@@ -121,7 +122,7 @@ public:
     void traverseStreamOperator(FunctionModelItem functionItem);
     void traverseOperatorFunction(FunctionModelItem item);
     AbstractMetaFunction* traverseFunction(const AddedFunction& addedFunc, AbstractMetaClass* metaClass = 0,
-                                           const QHash<int, AbstractMetaType *> &templateArgs = QHash<int, AbstractMetaType *>());
+                                           const IntAbstractMetaHash &templateArgs = IntAbstractMetaHash());
     AbstractMetaFunction *traverseFunction(FunctionModelItem function);
     AbstractMetaField *traverseField(VariableModelItem field, const AbstractMetaClass *cls);
     void checkFunctionModifications();
