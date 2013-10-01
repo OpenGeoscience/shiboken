@@ -60,6 +60,11 @@ PointerNamespace::NamespaceObjectPointer PointerNamespace::createNamespaceObject
     return NamespaceObjectPointer(new NamespaceObject);
 }
 
+PointerNamespace::InheritNamespaceObjectPointer PointerNamespace::createInheritNamespaceObject()
+{
+    return InheritNamespaceObjectPointer(new InheritNamespaceObject);
+}
+
 std::list<int> PointerHelper::numbers(const PointerNamespace::NamespaceObjectPointer& ptr, int first, int count)
 {
     return ptr.get()->numbers(first, count);
