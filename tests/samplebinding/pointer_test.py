@@ -73,6 +73,16 @@ class TestPointer(unittest.TestCase):
         PointerHelper.numbers(o, 1, 3)
         PointerHelper.numbers(o.get(), 4, 2)
 
+    def testInheritMethods(self):
+        '''Test method redirection on template pointer class to inherited methods.'''
+        o = PointerNamespace.createInheritNamespaceObject()
+        # Test that base class members are available.
+        o.numbers(1, 2)
+        # Test that the raw pointer downcast is implicit.
+        PointerHelper.numbers(o.get(), 4, 2)
+        # Test that the wrapping pointer downcast is implicit as well.
+        PointerHelper.numbers(o, 1, 3)
+
 if __name__ == '__main__':
     unittest.main()
 
