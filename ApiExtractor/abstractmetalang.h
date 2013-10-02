@@ -1719,6 +1719,11 @@ public:
         return m_baseClassNames;
     }
 
+    void addBaseClassName(const QString &name)
+    {
+        m_baseClassNames.append(name);
+    }
+
     void setBaseClassNames(const QStringList &names)
     {
         m_baseClassNames = names;
