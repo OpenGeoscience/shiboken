@@ -4313,7 +4313,7 @@ void CppGenerator::writeClassRegister(QTextStream& s, const AbstractMetaClass* m
     // Multiple inheritance
     QString pyTypeBasesVariable = QString("%1_bases").arg(pyTypeName);
     const AbstractMetaClassList baseClasses = getBaseClasses(metaClass);
-    if (metaClass->baseClassNames().size() > 1) {
+    if (!baseClasses.isEmpty()) {
         s << INDENT << "PyObject* " << pyTypeBasesVariable << " = PyTuple_Pack(" << baseClasses.size() << ',' << endl;
         QStringList bases;
         foreach (const AbstractMetaClass* base, baseClasses)
@@ -4350,7 +4350,7 @@ void CppGenerator::writeClassRegister(QTextStream& s, const AbstractMetaClass* m
         else
             s << ", 0";
         // The other base types
-        if (metaClass->baseClassNames().size() > 1)
+        if (!baseClasses.isEmpty())
             s << ", " << pyTypeBasesVariable;
         else
             s << ", 0";
