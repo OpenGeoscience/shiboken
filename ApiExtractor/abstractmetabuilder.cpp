@@ -1503,7 +1503,7 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
             if (wrapsPointer
                 && entry->templateType()->wrapsPointerArg() == ordinal
                 && !argClass->baseClassName().isEmpty()) {
-                QStringList argList = parseTemplateType(metaClass->name());
+                QStringList argList = parseTemplateType(metaClass->qualifiedCppName());
                 QString templateClass = argList.takeFirst();
                 argList[ordinal] = argClass->baseClass()->qualifiedCppName();
                 QString baseTemplateClass = QString("%1< %2 >").arg(templateClass).arg(argList.join(", "));
