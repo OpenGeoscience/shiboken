@@ -1512,10 +1512,9 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
                 AbstractMetaClass* baseMetaClass = m_metaClasses.findClass(baseTemplateClass);
 
                 if (baseMetaClass) {
-                    if (metaClass->baseClass())
-                        metaClass->addBaseClassName(baseTemplateClass);
-                    else
+                    if (!metaClass->baseClass())
                         metaClass->setBaseClass(baseMetaClass);
+                    metaClass->addBaseClassName(baseTemplateClass);
                 } else {
                     QString warn = QString("want to inherit %1 from same class with arg %2 replaced with %3, but it is an unknown type.")
                                     .arg(metaClass->name()).arg(ordinal).arg(argClass->baseClass()->qualifiedCppName());
