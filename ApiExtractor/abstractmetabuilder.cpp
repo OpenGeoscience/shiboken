@@ -1511,6 +1511,8 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
                 AbstractMetaClass* baseMetaClass = m_metaClasses.findClass(baseTemplateClass);
 
                 if (baseMetaClass) {
+                    metaClass->setHasInjectedDependencies();
+                    baseMetaClass->setHasInjectedDependencies();
                     if (!metaClass->baseClass())
                         metaClass->setBaseClass(baseMetaClass);
                     metaClass->addBaseClassName(baseTemplateClass);
