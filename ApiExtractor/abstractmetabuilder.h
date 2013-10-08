@@ -170,7 +170,7 @@ public:
     }
 
     AbstractMetaClass *findTemplateClass(const QString& name, const AbstractMetaClass *context, TypeParser::Info *info = 0) const;
-    AbstractMetaClassList getBaseClasses(const AbstractMetaClass* metaClass) const;
+    AbstractMetaClassList getBaseClasses(const AbstractMetaClass* metaClass, bool useTemplate = true) const;
     bool ancestorHasPrivateCopyConstructor(const AbstractMetaClass* metaClass) const;
 
     bool inheritTemplate(AbstractMetaClass *subclass,
