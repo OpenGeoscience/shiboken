@@ -124,14 +124,10 @@ struct StackElementContext
     DocModificationList docModifications;
 };
 
-class Handler : public QXmlDefaultHandler
+class GenericHandler : public QXmlDefaultHandler
 {
 public:
-    Handler(TypeDatabase* database, bool generate);
-
-    bool startElement(const QString& namespaceURI, const QString& localName,
-                      const QString& qName, const QXmlAttributes& atts);
-    bool endElement(const QString& namespaceURI, const QString& localName, const QString& qName);
+    GenericHandler() {}
 
     QString errorString() const
     {
@@ -142,6 +138,21 @@ public:
     bool fatalError(const QXmlParseException &exception);
     bool warning(const QXmlParseException &exception);
 
+protected:
+    bool convertBoolean(const QString &, const QString &, bool);
+
+    QString m_error;
+};
+
+class Handler : public GenericHandler
+{
+public:
+    Handler(TypeDatabase* database, bool generate);
+
+    bool startElement(const QString& namespaceURI, const QString& localName,
+                      const QString& qName, const QXmlAttributes& atts);
+    bool endElement(const QString& namespaceURI, const QString& localName, const QString& qName);
+
     bool characters(const QString &ch);
 
 private:
@@ -149,7 +160,6 @@ private:
                               QHash<QString, QString> *acceptedAttributes);
 
     bool importFileElement(const QXmlAttributes &atts);
-    bool convertBoolean(const QString &, const QString &, bool);
 
     TypeDatabase* m_database;
     StackElement* m_current;
@@ -158,7 +168,6 @@ private:
     int m_ignoreDepth;
     QString m_defaultPackage;
     QString m_defaultSuperclass;
-    QString m_error;
     TypeEntry::CodeGeneration m_generate;
 
     EnumTypeEntry* m_currentEnum;
