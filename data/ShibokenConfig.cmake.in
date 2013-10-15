@@ -3,3 +3,5 @@ if (NOT PYTHON_SUFFIX)
     SET(PYTHON_SUFFIX @PYTHON_SUFFIX@)
 endif()
 include(@LIB_INSTALL_DIR@/cmake/Shiboken-@shiboken_VERSION@/ShibokenConfig${PYTHON_SUFFIX}.cmake)
+
+set(SHIBOKEN_USE_FILE "@LIB_INSTALL_DIR@/cmake/Shiboken-@shiboken_VERSION@/UseShiboken.cmake")

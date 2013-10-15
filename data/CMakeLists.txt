@@ -25,4 +25,5 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/ShibokenConfigVersion.cmake"
         DESTINATION "${LIB_INSTALL_DIR}/cmake/Shiboken-${shiboken_VERSION}")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/shiboken${shiboken_SUFFIX}.pc"
         DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
-
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/UseShiboken.cmake"
+        DESTINATION "${LIB_INSTALL_DIR}/cmake/Shiboken-${shiboken_VERSION}")
