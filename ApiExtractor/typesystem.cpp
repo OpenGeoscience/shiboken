@@ -35,6 +35,45 @@ static QString strings_jobject = QLatin1String("jobject");
 
 static QList<CustomConversion*> customConversionsForReview = QList<CustomConversion*>();
 
+bool GenericHandler::error(const QXmlParseException &e)
+{
+    qWarning("Error: line=%d, column=%d, message=%s\n",
+             e.lineNumber(), e.columnNumber(), qPrintable(e.message()));
+    return false;
+}
+
+bool GenericHandler::fatalError(const QXmlParseException &e)
+{
+    qWarning("Fatal error: line=%d, column=%d, message=%s\n",
+             e.lineNumber(), e.columnNumber(), qPrintable(e.message()));
+
+    return false;
+}
+
+bool GenericHandler::warning(const QXmlParseException &e)
+{
+    qWarning("Warning: line=%d, column=%d, message=%s\n",
+             e.lineNumber(), e.columnNumber(), qPrintable(e.message()));
+
+    return false;
+}
+
+bool GenericHandler::convertBoolean(const QString &_value, const QString &attributeName, bool defaultValue)
+{
+    QString value = _value.toLower();
+    if (value == "true" || value == "yes")
+        return true;
+     else if (value == "false" || value == "no")
+        return false;
+     else {
+        QString warn = QString("Boolean value '%1' not supported in attribute '%2'. Use 'yes' or 'no'. Defaulting to '%3'.")
+                       .arg(value).arg(attributeName).arg(defaultValue ? "yes" : "no");
+
+        ReportHandler::warning(warn);
+        return defaultValue;
+    }
+}
+
 Handler::Handler(TypeDatabase* database, bool generate)
             : m_database(database), m_generate(generate ? TypeEntry::GenerateAll : TypeEntry::GenerateForSubclass)
 {
@@ -88,29 +127,6 @@ Handler::Handler(TypeDatabase* database, bool generate)
     tagNames["inject-documentation"] = StackElement::InjectDocumentation;
     tagNames["modify-documentation"] = StackElement::ModifyDocumentation;
     tagNames["add-function"] = StackElement::AddFunction;
-}
-
-bool Handler::error(const QXmlParseException &e)
-{
-    qWarning("Error: line=%d, column=%d, message=%s\n",
-             e.lineNumber(), e.columnNumber(), qPrintable(e.message()));
-    return false;
-}
-
-bool Handler::fatalError(const QXmlParseException &e)
-{
-    qWarning("Fatal error: line=%d, column=%d, message=%s\n",
-             e.lineNumber(), e.columnNumber(), qPrintable(e.message()));
-
-    return false;
-}
-
-bool Handler::warning(const QXmlParseException &e)
-{
-    qWarning("Warning: line=%d, column=%d, message=%s\n",
-             e.lineNumber(), e.columnNumber(), qPrintable(e.message()));
-
-    return false;
 }
 
 void Handler::fetchAttributeValues(const QString &name, const QXmlAttributes &atts,
@@ -388,22 +404,6 @@ bool Handler::importFileElement(const QXmlAttributes &atts)
     }
 
     return true;
-}
-
-bool Handler::convertBoolean(const QString &_value, const QString &attributeName, bool defaultValue)
-{
-    QString value = _value.toLower();
-    if (value == "true" || value == "yes")
-        return true;
-     else if (value == "false" || value == "no")
-        return false;
-     else {
-        QString warn = QString("Boolean value '%1' not supported in attribute '%2'. Use 'yes' or 'no'. Defaulting to '%3'.")
-                       .arg(value).arg(attributeName).arg(defaultValue ? "yes" : "no");
-
-        ReportHandler::warning(warn);
-        return defaultValue;
-    }
 }
 
 static bool convertRemovalAttribute(const QString& removalAttribute, Modification& mod, QString& errorMsg)

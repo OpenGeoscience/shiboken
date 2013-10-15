@@ -4,6 +4,7 @@ set(shiboken_SRC
 generator.cpp
 shiboken/cppgenerator.cpp
 shiboken/headergenerator.cpp
+shiboken/listsources.cpp
 shiboken/overloaddata.cpp
 shiboken/shibokengenerator.cpp
 shiboken/shibokennormalize.cpp

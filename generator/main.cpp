@@ -31,6 +31,7 @@
 #include "shibokenconfig.h"
 #include "cppgenerator.h"
 #include "headergenerator.h"
+#include "listsources.h"
 #include "qtdocgenerator.h"
 
 #ifdef _WINDOWS
@@ -255,7 +256,8 @@ void printUsage(const GeneratorList& generators)
     generalOptions.insert("output-directory=<path>", "The directory where the generated files will be written");
     generalOptions.insert("include-paths=<path>[" PATH_SPLITTER "<path>" PATH_SPLITTER "...]", "Include paths used by the C++ parser");
     generalOptions.insert("typesystem-paths=<path>[" PATH_SPLITTER "<path>" PATH_SPLITTER "...]", "Paths used when searching for typesystems");
-    generalOptions.insert("documentation-only", "Do not generates any code, just the documentation");
+    generalOptions.insert("documentation-only", "Do not generate any code, just the documentation");
+    generalOptions.insert("list-outputs", "Do not generate any code, just show list of files that would be created");
     generalOptions.insert("license-file=<license-file>", "File used for copyright headers of generated files");
     generalOptions.insert("version", "Output version information and exit");
     generalOptions.insert("generator-set=<\"generator module\">", "generator-set to be used. e.g. qtdoc");
@@ -344,6 +346,23 @@ int main(int argc, char *argv[])
     QString outputDirectory = argsHandler.removeArg("output-directory");
     if (outputDirectory.isEmpty())
         outputDirectory = "out";
+
+    if (argsHandler.argExistsRemove("list-outputs")) {
+        if (!(generatorSet.isEmpty() || generatorSet == "shiboken")) {
+            errorPrint("shiboken: --list-outputs is only supported for the \"shiboken\" generator set.");
+            return EXIT_FAILURE;
+        }
+        QString typeSystemFileName = argsHandler.removeArg("arg-2");
+        if (typeSystemFileName.isEmpty()) {
+            errorPrint("shiboken: Type system was not specified.");
+            return EXIT_FAILURE;
+        }
+        OutputLister lister;
+        lister.setOutputDirectory(outputDirectory);
+        if (!lister.parseFile(typeSystemFileName))
+            return EXIT_FAILURE;
+        return EXIT_SUCCESS;
+    }
 
     if (!QDir(outputDirectory).exists()) {
         if (!QDir().mkpath(outputDirectory)) {
