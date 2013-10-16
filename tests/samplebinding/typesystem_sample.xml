@@ -2425,12 +2425,21 @@
 
     <namespace-type name="PointerNamespace">
         <object-type name="NamespaceObject"/>
+        <object-type name="InheritNamespaceObject"/>
     </namespace-type>
     <type-template name="PointerNamespace::Pointer">
         <arg wraps-pointer-as="%CPPSELF-&gt;get()" />
     </type-template>
     <value-type template="PointerNamespace::Pointer" args="PointerNamespace::NamespaceObject">
         <add-function signature="get()" return-type="PointerNamespace::NamespaceObject*">
+            <inject-code>
+                %RETURN_TYPE %0 = %CPPSELF->get();
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </add-function>
+    </value-type>
+    <value-type template="PointerNamespace::Pointer" args="PointerNamespace::InheritNamespaceObject">
+        <add-function signature="get()" return-type="PointerNamespace::InheritNamespaceObject*">
             <inject-code>
                 %RETURN_TYPE %0 = %CPPSELF->get();
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);

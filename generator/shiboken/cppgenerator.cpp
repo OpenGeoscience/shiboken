@@ -4293,7 +4293,7 @@ void CppGenerator::writeClassRegister(QTextStream& s, const AbstractMetaClass* m
     // Multiple inheritance
     QString pyTypeBasesVariable = QString("%1_bases").arg(pyTypeName);
     const AbstractMetaClassList baseClasses = getBaseClasses(metaClass);
-    if (metaClass->baseClassNames().size() > 1) {
+    if (!baseClasses.isEmpty()) {
         s << INDENT << "PyObject* " << pyTypeBasesVariable << " = PyTuple_Pack(" << baseClasses.size() << ',' << endl;
         QStringList bases;
         foreach (const AbstractMetaClass* base, baseClasses)
@@ -4321,23 +4321,23 @@ void CppGenerator::writeClassRegister(QTextStream& s, const AbstractMetaClass* m
             if ((avoidProtectedHack() && metaClass->hasProtectedDestructor()) || classTypeEntry->isValue())
                 dtorClassName = wrapperName(metaClass);
             s << ", &Shiboken::callCppDestructor< ::" << dtorClassName << " >";
-        } else if (metaClass->baseClass() || hasEnclosingClass) {
+        } else
             s << ", 0";
-        }
 
         // Base type
-        if (metaClass->baseClass()) {
+        if (metaClass->baseClass())
             s << ", (SbkObjectType*)" << cpythonTypeNameExt(metaClass->baseClass()->typeEntry());
-            // The other base types
-            if (metaClass->baseClassNames().size() > 1)
-                s << ", " << pyTypeBasesVariable;
-            else if (hasEnclosingClass)
-                s << ", 0";
-        } else if (hasEnclosingClass) {
-            s << ", 0, 0";
-        }
+        else
+            s << ", 0";
+        // The other base types
+        if (!baseClasses.isEmpty())
+            s << ", " << pyTypeBasesVariable;
+        else
+            s << ", 0";
         if (hasEnclosingClass)
             s << ", true";
+        else
+            s << ", false";
         s << ")) {" << endl;
         s << INDENT << "return;" << endl;
     }

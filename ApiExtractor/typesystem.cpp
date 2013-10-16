@@ -1904,7 +1904,7 @@ bool Handler::startElement(const QString &, const QString &n,
                     m_error = "Template types can only wrap a single type argument as a pointer.";
                     return false;
                 }
-                tentry->setWrapsPointerAs(wrapsPointerAs);
+                tentry->setWrapsPointerAs(wrapsPointerAs, tentry->args().size());
                 if (redirect.isEmpty())
                     redirect = wrapsPointerAs + "->";
             }

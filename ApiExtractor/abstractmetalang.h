@@ -1428,7 +1428,8 @@ public:
               m_extractedInterface(0),
               m_primaryInterfaceImplementor(0),
               m_typeEntry(0),
-              m_stream(false)
+              m_stream(false),
+              m_hasInjectedDependencies(false)
     {
     }
 
@@ -1700,6 +1701,21 @@ public:
      */
     bool hasProtectedMembers() const;
 
+    /**
+     * Tells if this class has dependencies injected by the metabuilder.
+     * \return true if the class has injected dependencies.
+     */
+    bool hasInjectedDependencies() const
+    {
+        return m_hasInjectedDependencies;
+    }
+    /**
+     * Tell the metaclass that it has injected dependencies.
+     */
+    void setHasInjectedDependencies()
+    {
+        m_hasInjectedDependencies = true;
+    }
 
     QList<TypeEntry *> templateArguments() const
     {
@@ -1717,6 +1733,11 @@ public:
     QStringList baseClassNames() const
     {
         return m_baseClassNames;
+    }
+
+    void addBaseClassName(const QString &name)
+    {
+        m_baseClassNames.append(name);
     }
 
     void setBaseClassNames(const QStringList &names)
@@ -1966,6 +1987,7 @@ private:
 //     FunctionModelItem m_qDebugStreamFunction;
 
     bool m_stream;
+    bool m_hasInjectedDependencies;
     static int m_count;
 };
 

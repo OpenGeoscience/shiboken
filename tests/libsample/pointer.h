@@ -123,10 +123,17 @@ public:
     ::std::list<int> numbers(int first, int count) const;
 };
 
+class LIBSAMPLE_API InheritNamespaceObject : public NamespaceObject
+{
+};
+
 typedef Pointer<NamespaceObject> NamespaceObjectPointer;
+typedef Pointer<InheritNamespaceObject> InheritNamespaceObjectPointer;
 typedef NamespaceObject PointerNamespaceObjectAlias;
+typedef InheritNamespaceObject PointerInheritNamespaceObjectAlias;
 
 LIBSAMPLE_API NamespaceObjectPointer createNamespaceObject();
+LIBSAMPLE_API InheritNamespaceObjectPointer createInheritNamespaceObject();
 
 }
 
