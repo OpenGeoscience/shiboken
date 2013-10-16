@@ -989,6 +989,17 @@ void CppGenerator::writeConverterFunctions(QTextStream& s, const AbstractMetaCla
         }
         c << INDENT << '}' << endl;
         c << INDENT << "const char* typeName = typeid(*((" << typeName << "*)cppIn)).name();" << endl;
+        const TypeTemplateEntry *typeTemplate = metaClass->typeEntry()->templateType();
+        if (typeTemplate && !typeTemplate->wrapsPointerAs().isEmpty())
+        {
+            const QString &cppSelfCode = QString("(reinterpret_cast< const %1 * >(cppIn))").arg(typeName);
+            c << INDENT << "if (!" << typeTemplate->wrapsPointerAs().replace("%CPPSELF", cppSelfCode) << ") {" << endl;
+            {
+                Indentation indent(INDENT);
+                c << INDENT << "Py_RETURN_NONE;" << endl;
+            }
+            c << INDENT << "}" << endl;
+        }
         c << INDENT << "return Shiboken::Object::newObject(&" << cpythonType;
         c << ", const_cast<void*>(cppIn), false, false, typeName);";
     }
@@ -1006,6 +1017,20 @@ void CppGenerator::writeConverterFunctions(QTextStream& s, const AbstractMetaCla
     sourceTypeName = QString("%1_COPY").arg(fixedCppTypeName(metaClass->name()));
     targetTypeName = fixedCppTypeName(metaClass->name());
     code.clear();
+
+    // For wrapped pointers, checks internal pointer and returns None if not instantiated
+    const TypeTemplateEntry *typeTemplate = metaClass->typeEntry()->templateType();
+    if (typeTemplate && !typeTemplate->wrapsPointerAs().isEmpty())
+    {
+      const QString &cppSelfCode = QString("(reinterpret_cast< const %1 * >(cppIn))").arg(typeName);
+      c << INDENT << "if (!" << typeTemplate->wrapsPointerAs().replace("%CPPSELF", cppSelfCode) << ") {" << endl;
+      {
+        Indentation indent(INDENT);
+        c << INDENT << "Py_RETURN_NONE;" << endl;
+      }
+      c << INDENT << "}" << endl;
+    }
+
     c << INDENT << "return Shiboken::Object::newObject(&" << cpythonType << ", new ::" << wrapperName(metaClass);
     c << "(*((" << typeName << "*)cppIn)), true, true);";
     writeCppToPythonFunction(s, code, sourceTypeName, targetTypeName);

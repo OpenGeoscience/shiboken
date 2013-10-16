@@ -2427,7 +2427,7 @@
         <object-type name="NamespaceObject"/>
     </namespace-type>
     <type-template name="PointerNamespace::Pointer">
-        <arg redirect="%CPPSELF-&gt;get()-&gt;"/>
+        <arg wraps-pointer-as="%CPPSELF-&gt;get()" />
     </type-template>
     <value-type template="PointerNamespace::Pointer" args="PointerNamespace::NamespaceObject">
         <add-function signature="get()" return-type="PointerNamespace::NamespaceObject*">
