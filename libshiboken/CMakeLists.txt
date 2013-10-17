@@ -48,6 +48,7 @@ target_link_libraries(libshiboken ${SBK_PYTHON_LIBRARIES})
 set_target_properties(libshiboken PROPERTIES OUTPUT_NAME "shiboken${shiboken_SUFFIX}${PYTHON_SUFFIX}"
                                              VERSION ${libshiboken_VERSION}
                                              SOVERSION ${libshiboken_SOVERSION}
+                                             INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
                                              DEFINE_SYMBOL LIBSHIBOKEN_EXPORTS)
 
 install(FILES
