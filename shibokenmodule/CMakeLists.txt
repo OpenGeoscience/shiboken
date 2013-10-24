@@ -22,6 +22,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}
 add_library(shibokenmodule MODULE ${sample_SRC})
 set_property(TARGET shibokenmodule PROPERTY PREFIX "")
 set_property(TARGET shibokenmodule PROPERTY OUTPUT_NAME "shiboken")
+set_property(TARGET shibokenmodule PROPERTY INSTALL_RPATH "\$ORIGIN")
 if(WIN32)
     set_property(TARGET shibokenmodule PROPERTY SUFFIX ".pyd")
 endif()
