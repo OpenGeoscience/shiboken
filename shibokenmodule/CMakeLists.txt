@@ -22,6 +22,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}
 add_library(shibokenmodule MODULE ${sample_SRC})
 set_property(TARGET shibokenmodule PROPERTY PREFIX "")
 set_property(TARGET shibokenmodule PROPERTY OUTPUT_NAME "shiboken")
+
+option(SET_RPATH "Set the rvalue to be the origin (used in UNIX)." FALSE)
+if(UNIX AND NOT APPLE AND SET_RPATH)
+    set_property(TARGET shibokenmodule PROPERTY INSTALL_RPATH "\$ORIGIN")
+endif()
 if(WIN32)
     set_property(TARGET shibokenmodule PROPERTY SUFFIX ".pyd")
 endif()
@@ -30,5 +35,6 @@ target_link_libraries(shibokenmodule
                       libshiboken)
 
 add_dependencies(shibokenmodule shiboken)
+
 
 install(TARGETS shibokenmodule DESTINATION ${PYTHON_SITE_PACKAGES})
