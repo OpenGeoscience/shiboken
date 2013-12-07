@@ -141,8 +141,8 @@ struct Converter<T&>
 template<>
 struct Converter<void*>
 {
-    static inline bool checkType(PyObject* pyObj) { return false; }
-    static inline bool isConvertible(PyObject* pyobj) { return true; }
+    static inline bool checkType(PyObject*) { return false; }
+    static inline bool isConvertible(PyObject*) { return true; }
     static PyObject* toPython(void* cppobj)
     {
         if (!cppobj)
@@ -291,7 +291,7 @@ struct OverFlowChecker<T, false>
 template<>
 struct OverFlowChecker<PY_LONG_LONG, true>
 {
-    static bool check(const PY_LONG_LONG& value)
+    static bool check(const PY_LONG_LONG&)
     {
         return false;
     }
@@ -300,7 +300,7 @@ struct OverFlowChecker<PY_LONG_LONG, true>
 template<>
 struct OverFlowChecker<double, true>
 {
-    static bool check(const double& value)
+    static bool check(const double&)
     {
         return false;
     }
