@@ -325,8 +325,8 @@ void CppGenerator::generateClass(QTextStream &s, const AbstractMetaClass *metaCl
     s << "static PyMethodDef " << className << "_methods[] = {" << endl;
     s << methodsDefinitions << endl;
     if (metaClass->typeEntry()->isValue())
-        s << INDENT << "{\"__copy__\", (PyCFunction)" << className << "___copy__" << ", METH_NOARGS}," << endl;
-    s << INDENT << "{0} // Sentinel" << endl;
+        s << INDENT << "{\"__copy__\", (PyCFunction)" << className << "___copy__" << ", METH_NOARGS, NULL}," << endl;
+    s << INDENT << "{NULL, NULL, 0, NULL} // Sentinel" << endl;
     s << "};" << endl << endl;
 
     // Write tp_getattro function
@@ -409,9 +409,11 @@ void CppGenerator::generateClass(QTextStream &s, const AbstractMetaClass *metaCl
             s << INDENT << "{const_cast<char*>(\"" << metaField->name() << "\"), ";
             s << cpythonGetterFunctionName(metaField);
             s << ", " << (hasSetter ? cpythonSetterFunctionName(metaField) : "0");
+            s << ", NULL"; // TODO: documentation string goes here
+            s << ", NULL"; // TODO: closure goes here
             s << "}," << endl;
         }
-        s << INDENT << "{0}  // Sentinel" << endl;
+        s << INDENT << "{NULL, NULL, NULL, NULL, NULL}  // Sentinel" << endl;
         s << "};" << endl << endl;
     }
 
@@ -1273,6 +1275,7 @@ void CppGenerator::writeMethodWrapperPreamble(QTextStream& s, OverloadData& over
     bool initPythonArguments;
     bool usesNamedArguments;
 
+    s << "(void)" << PYTHON_SELF_VAR << ";\n"; // Avoid warnings when self is unused.
     // If method is a constructor...
     if (rfunc->isConstructor()) {
         // Check if the right constructor was called.
@@ -1335,6 +1338,7 @@ void CppGenerator::writeConstructorWrapper(QTextStream& s, const AbstractMetaFun
     s << "static int" << endl;
     s << cpythonFunctionName(rfunc) << "(PyObject* " PYTHON_SELF_VAR ", PyObject* args, PyObject* kwds)" << endl;
     s << '{' << endl;
+    s << "(void)kwds;" << endl; // Avoid warnings when kwd is unused.
 
     QSet<QString> argNamesSet;
     if (usePySideExtensions() && metaClass->isQObject()) {
@@ -3949,6 +3953,7 @@ void CppGenerator::writeMethodDefinitionEntry(QTextStream& s, const AbstractMeta
     }
     if (func->ownerClass() && overloadData.hasStaticFunction())
         s << "|METH_STATIC";
+    s << ", NULL";
 }
 
 void CppGenerator::writeMethodDefinition(QTextStream& s, const AbstractMetaFunctionList overloads)
@@ -4728,7 +4733,7 @@ void CppGenerator::finishGeneration()
 
     s << "static PyMethodDef " << moduleName() << "_methods[] = {" << endl;
     s << globalFunctionDecl;
-    s << INDENT << "{0} // Sentinel" << endl << "};" << endl << endl;
+    s << INDENT << "{NULL, NULL, 0, NULL} // Sentinel" << endl << "};" << endl << endl;
 
     s << "// Classes initialization functions ";
     s << "------------------------------------------------------------" << endl;
