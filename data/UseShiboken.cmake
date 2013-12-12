@@ -95,24 +95,35 @@ function(sbk_cat VAR SEP)
 endfunction()
 
 #------------------------------------------------------------------------------
-# Function to concatenate strings in a list into a single string, with
-# duplicates suppressed
-function(sbk_cat_no_dups VAR SEP)
-    set(_result)
-    if(ARGC GREATER 2)
-        list(REMOVE_DUPLICATES ARGN)
-        sbk_cat(_result "${SEP}" ${ARGN})
-    endif()
-    set(${VAR} "${_result}" PARENT_SCOPE)
-endfunction()
-
-#------------------------------------------------------------------------------
 # Function to write content to a file, without spurious changes to time stamp
 function(sbk_write_file PATH CONTENT)
     set(CMAKE_CONFIGURABLE_FILE_CONTENT "${CONTENT}")
     configure_file(
         "${CMAKE_ROOT}/Modules/CMakeConfigurableFile.in"
         "${PATH}" @ONLY)
+endfunction()
+
+#------------------------------------------------------------------------------
+# Function to get the list of generated source files for a Shiboken wrapping.
+function(sbk_get_generated_sources_list
+    OUTPUT_VARIABLE
+    TYPESYSTEM
+    OUTPUT_DIRECTORY
+)
+    if(NOT OUTPUT_DIRECTORY)
+        set(OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+    endif()
+    set(GLOBAL_HEADER "") # Not needed for --list-outputs
+    execute_process(
+        COMMAND "${SHIBOKEN_BINARY}"
+                --generatorSet=shiboken
+                --list-outputs
+                "--output-directory=${OUTPUT_DIRECTORY}"
+                "${GLOBAL_HEADER}"
+                "${TYPESYSTEM}"
+        OUTPUT_VARIABLE _out)
+    string(REPLACE "\n" ";" _out "${_out}")
+    set(${OUTPUT_VARIABLE} "${_out}" PARENT_SCOPE)
 endfunction()
 
 #------------------------------------------------------------------------------
@@ -243,15 +254,7 @@ function(sbk_wrap_library NAME)
     endif()
 
     # Determine list of generated source files
-    execute_process(
-        COMMAND "${SHIBOKEN_BINARY}"
-                "${_global_header}"
-                --generatorSet=shiboken
-                --list-outputs
-                "--output-directory=${CMAKE_CURRENT_BINARY_DIR}"
-                "${_typesystem}"
-        OUTPUT_VARIABLE _sources)
-    string(REPLACE "\n" ";" _sources "${_sources}")
+    sbk_get_generated_sources_list(_sources "${_typesystem}")
     if(NOT _sources)
         message(FATAL_ERROR "sbk_wrap_library: no generated source files found "
                             "for wrapped library ${NAME}")
@@ -259,12 +262,14 @@ function(sbk_wrap_library NAME)
     set_source_files_properties(${_sources} PROPERTIES GENERATED TRUE)
 
     # Define rule to run the generator
+    list(REMOVE_DUPLICATES _includes)
+    list(REMOVE_DUPLICATES _typesystem_paths)
     if(WIN32)
-        sbk_cat_no_dups(_includes ";" ${_extra_include_dirs})
-        sbk_cat_no_dups(_typesystem_paths ";" ${_typesystem_paths})
+        sbk_cat(_includes ";" ${_extra_include_dirs})
+        sbk_cat(_typesystem_paths ";" ${_typesystem_paths})
     else()
-        sbk_cat_no_dups(_includes ":" ${_extra_include_dirs})
-        sbk_cat_no_dups(_typesystem_paths ":" ${_typesystem_paths})
+        sbk_cat(_includes ":" ${_extra_include_dirs})
+        sbk_cat(_typesystem_paths ":" ${_typesystem_paths})
     endif()
 
     set(_shiboken_options --generatorSet=shiboken)
@@ -285,10 +290,10 @@ function(sbk_wrap_library NAME)
         DEPENDS ${_typesystem} ${_global_header} ${_depends} ${_typesystem_depends}
         COMMAND "${SHIBOKEN_BINARY}"
                 ${_shiboken_options}
-                "${_global_header}"
                 "--include-paths=${_includes}"
                 "--typesystem-paths=${_typesystem_paths}"
                 "--output-directory=${CMAKE_CURRENT_BINARY_DIR}"
+                "${_global_header}"
                 "${_typesystem}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating Python bindings for ${NAME}")
