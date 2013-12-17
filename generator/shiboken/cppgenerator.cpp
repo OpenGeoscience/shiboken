@@ -1150,8 +1150,9 @@ void CppGenerator::writeConverterRegister(QTextStream& s, const AbstractMetaClas
 {
     if (metaClass->isNamespace())
         return;
+    QString cvtname = QString("converter%1").arg(INDENT.indent);
     s << INDENT << "// Register Converter" << endl;
-    s << INDENT << "SbkConverter* converter = Shiboken::Conversions::createConverter(&";
+    s << INDENT << "SbkConverter* " << cvtname << " = Shiboken::Conversions::createConverter(&";
     s << cpythonTypeName(metaClass) << ',' << endl;
     {
         Indentation indent(INDENT);
@@ -1174,16 +1175,16 @@ void CppGenerator::writeConverterRegister(QTextStream& s, const AbstractMetaClas
     QStringList cppSignature = metaClass->qualifiedCppName().split("::", QString::SkipEmptyParts);
     while (!cppSignature.isEmpty()) {
         QString signature = cppSignature.join("::");
-        s << INDENT << "Shiboken::Conversions::registerConverterName(converter, \"" << signature << "\");" << endl;
-        s << INDENT << "Shiboken::Conversions::registerConverterName(converter, \"" << signature << "*\");" << endl;
-        s << INDENT << "Shiboken::Conversions::registerConverterName(converter, \"" << signature << "&\");" << endl;
+        s << INDENT << "Shiboken::Conversions::registerConverterName(" << cvtname << ", \"" << signature << "\");" << endl;
+        s << INDENT << "Shiboken::Conversions::registerConverterName(" << cvtname << ", \"" << signature << "*\");" << endl;
+        s << INDENT << "Shiboken::Conversions::registerConverterName(" << cvtname << ", \"" << signature << "&\");" << endl;
         cppSignature.removeFirst();
     }
 
-    s << INDENT << "Shiboken::Conversions::registerConverterName(converter, typeid(::";
+    s << INDENT << "Shiboken::Conversions::registerConverterName(" << cvtname << ", typeid(::";
     s << metaClass->qualifiedCppName() << ").name());" << endl;
     if (shouldGenerateCppWrapper(metaClass)) {
-        s << INDENT << "Shiboken::Conversions::registerConverterName(converter, typeid(::";
+        s << INDENT << "Shiboken::Conversions::registerConverterName(" << cvtname << ", typeid(::";
         s << wrapperName(metaClass) << ").name());" << endl;
     }
 
@@ -1198,7 +1199,7 @@ void CppGenerator::writeConverterRegister(QTextStream& s, const AbstractMetaClas
     QString targetTypeName = QString("%1_COPY").arg(sourceTypeName);
     QString toCpp = pythonToCppFunctionName(sourceTypeName, targetTypeName);
     QString isConv = convertibleToCppFunctionName(sourceTypeName, targetTypeName);
-    writeAddPythonToCppConversion(s, "converter", toCpp, isConv);
+    writeAddPythonToCppConversion(s, cvtname, toCpp, isConv);
 
     // User provided implicit conversions.
     CustomConversion* customConversion = metaClass->typeEntry()->customConversion();
@@ -1230,10 +1231,10 @@ void CppGenerator::writeConverterRegister(QTextStream& s, const AbstractMetaClas
         }
         QString toCpp = pythonToCppFunctionName(sourceType, targetType);
         QString isConv = convertibleToCppFunctionName(sourceType, targetType);
-        writeAddPythonToCppConversion(s, "converter", toCpp, isConv);
+        writeAddPythonToCppConversion(s, cvtname, toCpp, isConv);
     }
 
-    writeCustomConverterRegister(s, customConversion, "converter");
+    writeCustomConverterRegister(s, customConversion, cvtname);
 }
 
 void CppGenerator::writeCustomConverterRegister(QTextStream& s, const CustomConversion* customConversion, const QString& converterVar)
@@ -1338,6 +1339,7 @@ void CppGenerator::writeConstructorWrapper(QTextStream& s, const AbstractMetaFun
     s << "static int" << endl;
     s << cpythonFunctionName(rfunc) << "(PyObject* " PYTHON_SELF_VAR ", PyObject* args, PyObject* kwds)" << endl;
     s << '{' << endl;
+    s << "(void)args;" << endl; // Avoid warnings when args is unused.
     s << "(void)kwds;" << endl; // Avoid warnings when kwd is unused.
 
     QSet<QString> argNamesSet;
@@ -1489,6 +1491,18 @@ void CppGenerator::writeMethodWrapper(QTextStream& s, const AbstractMetaFunction
             s << ", PyObject* kwds";
     }
     s << ')' << endl << '{' << endl;
+    // Avoid unused variable warnings
+    if (maxArgs > 0)
+      {
+      if (pythonFunctionWrapperUsesListOfArguments(overloadData))
+        {
+        s << "(void)args;" << endl;
+        }
+      else
+        {
+        s << "(void)" << PYTHON_ARG << ";" << endl;
+        }
+      }
 
     writeMethodWrapperPreamble(s, overloadData);
 
@@ -2482,6 +2496,7 @@ void CppGenerator::writeIsPythonConvertibleToCppFunction(QTextStream& s,
 
     s << "static PythonToCppFunc " << convertibleToCppFunctionName(sourceTypeName, targetTypeName);
     s << "(PyObject* pyIn) {" << endl;
+    s << "(void)pyIn;" << endl; // Avoid unused-variable warnings.
     if (acceptNoneAsCppNull) {
         s << INDENT << "if (pyIn == Py_None)" << endl;
         Indentation indent(INDENT);
@@ -3207,7 +3222,8 @@ void CppGenerator::writeEnumConverterInitialization(QTextStream& s, const TypeEn
     {
         Indentation indent(INDENT);
         QString typeName = fixedCppTypeName(enumType);
-        s << INDENT << "SbkConverter* converter = Shiboken::Conversions::createConverter(" << enumPythonType << ',' << endl;
+        QString cvtName = QString("converter%1").arg(INDENT.indent);
+        s << INDENT << "SbkConverter* " << cvtName << " = Shiboken::Conversions::createConverter(" << enumPythonType << ',' << endl;
         {
             Indentation indent(INDENT);
             s << INDENT << cppToPythonFunctionName(typeName, typeName) << ");" << endl;
@@ -3217,25 +3233,25 @@ void CppGenerator::writeEnumConverterInitialization(QTextStream& s, const TypeEn
             QString enumTypeName = fixedCppTypeName(flags->originator());
             QString toCpp = pythonToCppFunctionName(enumTypeName, typeName);
             QString isConv = convertibleToCppFunctionName(enumTypeName, typeName);
-            writeAddPythonToCppConversion(s, "converter", toCpp, isConv);
+            writeAddPythonToCppConversion(s, cvtName, toCpp, isConv);
         }
 
         QString toCpp = pythonToCppFunctionName(typeName, typeName);
         QString isConv = convertibleToCppFunctionName(typeName, typeName);
-        writeAddPythonToCppConversion(s, "converter", toCpp, isConv);
+        writeAddPythonToCppConversion(s, cvtName, toCpp, isConv);
 
         if (flags) {
             QString toCpp = pythonToCppFunctionName("number", typeName);
             QString isConv = convertibleToCppFunctionName("number", typeName);
-            writeAddPythonToCppConversion(s, "converter", toCpp, isConv);
+            writeAddPythonToCppConversion(s, cvtName, toCpp, isConv);
         }
 
-        s << INDENT << "Shiboken::Enum::setTypeConverter(" << enumPythonType << ", converter);" << endl;
-        s << INDENT << "Shiboken::Enum::setTypeConverter(" << enumPythonType << ", converter);" << endl;
+        s << INDENT << "Shiboken::Enum::setTypeConverter(" << enumPythonType << ", " << cvtName << ");" << endl;
+        s << INDENT << "Shiboken::Enum::setTypeConverter(" << enumPythonType << ", " << cvtName << ");" << endl;
         QStringList cppSignature = enumType->qualifiedCppName().split("::", QString::SkipEmptyParts);
         while (!cppSignature.isEmpty()) {
             QString signature = cppSignature.join("::");
-            s << INDENT << "Shiboken::Conversions::registerConverterName(converter, \"";
+            s << INDENT << "Shiboken::Conversions::registerConverterName(" << cvtName << ", \"";
             if (flags)
                 s << "QFlags<";
             s << signature << "\");" << endl;
@@ -4473,6 +4489,9 @@ void CppGenerator::writeTypeDiscoveryFunction(QTextStream& s, const AbstractMeta
     QString polymorphicExpr = metaClass->typeEntry()->polymorphicIdValue();
 
     s << "static void* " << cpythonBaseName(metaClass) << "_typeDiscovery(void* cptr, SbkObjectType* instanceType)\n{" << endl;
+    // Avoid warnings:
+    s << "(void)cptr;" << endl;
+    s << "(void)instanceType;" << endl;
 
     if (!polymorphicExpr.isEmpty()) {
         polymorphicExpr = polymorphicExpr.replace("%1", " reinterpret_cast< ::" + metaClass->qualifiedCppName() + "*>(cptr)");
