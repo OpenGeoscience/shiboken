@@ -382,7 +382,7 @@ function(sbk_wrap_library NAME)
             if(_dep_wrap_includes)
                 list(APPEND _extra_include_dirs ${_dep_wrap_includes})
             endif()
-            get_target_property(_target_includes ${_dep} INCLUDE_DIRECTORIES)
+            get_target_property(_target_includes ${_dep} INTERFACE_INCLUDE_DIRECTORIES)
             list(APPEND _extra_include_dirs ${_target_includes})
             # Get additional link libraries for dependency (usually only set for
             # virtual modules)
