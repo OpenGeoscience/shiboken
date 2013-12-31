@@ -1,4 +1,4 @@
-#
+#==============================================================================
 # Copyright 2013 Kitware, Inc.
 #
 # This file is part of the Shiboken Python Binding Generator project.
@@ -20,7 +20,111 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
-#
+#==============================================================================
+
+#[[.rst:
+UseShiboken
+-----------
+
+This module provides a set of functions that simplify wrapping libraries using
+Shiboken. Using these macros, a simple library wrapping might look like:
+
+.. code-block:: cmake
+
+ set(mylib_SOURCES ...)
+ set(mylib_SDK_HEADERS ...)
+ add_library(mylib ${mylib_SOURCES})
+ target_link_libraries(mylib ...)
+
+ sbk_wrap_library(mylib
+   OBJECTS ...
+   HEADERS ${mylib_SDK_HEADERS})
+
+Using :command:`sbk_wrap_library` can remove the need to create a "global"
+header file (since the headers required by the wrapped objects are often the
+same as the set of headers that are installed) and in trivial cases even a
+typesystem XML. Additionally, it takes care of setting up the necessary build
+rules and dependencies for the wrapper library, including propagation of
+include, link and external typesystem dependencies for other wrapped libraries.
+
+When necessary, a custom typesystem template may be specified. The default
+template looks like::
+
+ <?xml version="1.0"?>
+ <typesystem package="@TYPESYSTEM_NAME@">
+ @EXTRA_TYPESYSTEMS@
+ @EXTRA_OBJECTS@
+ </typesystem>
+
+.. variable:: @TYPESYSTEM_NAME@
+
+ In typesystem templates, replaced with the name of the wrapped library. This
+ should always be used as the ``package`` attribute of the typesystem, as in
+ the example above.
+
+.. variable:: @EXTRA_TYPESYSTEMS@
+
+ In typesystem templates, replaced with the XML to include the typesystems of
+ any dependency wrapped libraries.
+
+.. variable:: @EXTRA_OBJECTS@
+
+ In typesystem templates, replaced with the XML to declare wrapped objects
+ specified as arguments to :command:`sbk_wrap_library`.
+
+Target Properties
+'''''''''''''''''
+
+The following properties are set on wrapped library targets by
+:command:`sbk_wrap_library`, on both the C++ library and the wrapping library.
+They are used for automatic injection of usage and dependency information in
+conjunction with the ``DEPENDS`` option to :command:`sbk_wrap_library`.
+
+.. prop_tgt:: SBK_WRAPPED_LIBRARY
+
+ The (target) name of the wrapped C++ library associated with this target.
+ Will be the same as the target name for the C++ library.
+
+.. prop_tgt:: SBK_WRAPPER_TARGET
+
+ The (target) name of the shiboken wrapping library associated with this
+ target. Will be the same as the target name for the wrapping library. See also
+ the ``OUTPUT_NAME`` option to :command:`sbk_wrap_library`.
+
+.. prop_tgt:: SBK_TYPESYSTEM
+
+ The Shiboken typesystem XML for this target's wrapper library.
+
+.. prop_tgt:: SBK_GLOBAL_HEADER
+
+ Path to the (generated) header file containing all includes for this target.
+ The generated header of a wrapping library automatically includes the global
+ headers of dependencies.
+
+.. prop_tgt:: SBK_TYPESYSTEM_PATHS
+
+ Path to the Shiboken typesystem for this target's wrapper library. When
+ generating a wrapping library's typesystem, :variable:`@EXTRA_TYPESYSTEMS@`
+ automatically includes the typesystems of dependencies.
+
+.. prop_tgt:: SBK_WRAP_INCLUDE_DIRS
+
+ Additional include directories for this target's wrapper library. This can be
+ thought of as a wrapping-specific :variable:`INTERFACE_INCLUDE_DIRECTORIES`,
+ and is used in much the same manner.
+
+.. prop_tgt:: SBK_WRAP_LINK_LIBRARIES
+
+ Additional link interface libraries for this target's wrapper library. Like
+ :variable:`SBK_WRAP_INCLUDE_DIRS`, this can be thought of as a
+ wrapping-specific :variable:`INTERFACE_LINK_LIBRARIES`, and is used in much
+ the same manner. Unlike :variable:`SBK_WRAP_INCLUDE_DIRS`, since wrapping
+ libraries usually do not need to link to each other, this is usually only set
+ for 'virtual' modules (e.g. ``PySide:Core``).
+
+#]]
+
+###############################################################################
 
 # Dependencies use target usage requirements, which were added in 2.8.11; ergo
 # we require at least that version
@@ -31,25 +135,6 @@ find_package(Shiboken REQUIRED)
 find_package(PySide)
 
 set(PYTHON_SHORT python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
-
-define_property(TARGET PROPERTY SBK_WRAPPER_TARGET
-                BRIEF_DOCS "Name of the shiboken wrapping library associated with this target"
-                FULL_DOCS "Property defined by ${CMAKE_CURRENT_LIST_FILE}")
-define_property(TARGET PROPERTY SBK_TYPESYSTEM
-                BRIEF_DOCS "Shiboken typesystem XML for this target's wrapper library"
-                FULL_DOCS "Property defined by ${CMAKE_CURRENT_LIST_FILE}")
-define_property(TARGET PROPERTY SBK_GLOBAL_HEADER
-                BRIEF_DOCS "Header file containing all includes for this target"
-                FULL_DOCS "Property defined by ${CMAKE_CURRENT_LIST_FILE}")
-define_property(TARGET PROPERTY SBK_TYPESYSTEM_PATHS
-                BRIEF_DOCS "Shiboken typesystem paths for this target's wrapper library"
-                FULL_DOCS "Property defined by ${CMAKE_CURRENT_LIST_FILE}")
-define_property(TARGET PROPERTY SBK_WRAP_INCLUDE_DIRS
-                BRIEF_DOCS "Additional include directories for this target's wrapper library"
-                FULL_DOCS "Property defined by ${CMAKE_CURRENT_LIST_FILE}")
-define_property(TARGET PROPERTY SBK_WRAP_LINK_LIBRARIES
-                BRIEF_DOCS "Additional link interface libraries for this target's wrapper library"
-                FULL_DOCS "Property defined by ${CMAKE_CURRENT_LIST_FILE}")
 
 if(PySide_FOUND)
     # Create 'virtual modules' for use as wrapping dependencies, starting with
@@ -80,8 +165,27 @@ include(CMakeParseArguments)
 
 ###############################################################################
 
+#==============================================================================
+#[[.rst:
+.. command:: sbk_cat
+
+ Concatenate strings in a list into a single string.
+
+ Parameters
+ ----------
+
+ :``VAR``: Output variable into which the result will be placed.
+ :``SEP``: String used to join adjacent tokens.
+ :``<ARGN>``: Tokens to be joined.
+
+ Example
+ -------
+
+ .. code-block:: cmake
+  sbk_cat(out "," a b c d e)
+
+#]]
 #------------------------------------------------------------------------------
-# Function to concatenate strings in a list into a single string
 function(sbk_cat VAR SEP)
     set(_result)
     foreach(_item ${ARGN})
@@ -94,8 +198,22 @@ function(sbk_cat VAR SEP)
     set(${VAR} "${_result}" PARENT_SCOPE)
 endfunction()
 
+#==============================================================================
+#[[.rst:
+.. command:: sbk_write_file
+
+ Write content to a file, only if the contents would change. This is used to
+ write a file without changing the time stamp (and causing build dependencies
+ to become out of date) unnecessarily.
+
+ Parameters
+ ----------
+
+ :``PATH``: Path to the file to be written.
+ :``CONTENT``: Content to write to the file.
+
+#]]
 #------------------------------------------------------------------------------
-# Function to write content to a file, without spurious changes to time stamp
 function(sbk_write_file PATH CONTENT)
     set(CMAKE_CONFIGURABLE_FILE_CONTENT "${CONTENT}")
     configure_file(
@@ -103,8 +221,26 @@ function(sbk_write_file PATH CONTENT)
         "${PATH}" @ONLY)
 endfunction()
 
+#==============================================================================
+#[[.rst:
+.. command:: sbk_get_generated_sources_list
+
+ Get the list of files that Shiboken will generate for a library wrapping,
+ based on the specified typesystem. This executes Shiboken with the
+ ``--list-outputs`` option.
+
+ Parameters
+ ----------
+
+ :``OUTPUT_VARIABLE``: Output variable into which the result will be placed.
+ :``TYPESYSTEM``: Path to the typesystem XML file for the library wrapping.
+ :``OUTPUT_DIRECTORY``:
+   (Optional) Directory to which generated files would be written. This is
+   passed to Shiboken and appears as part of the names of generated files.
+   Defaults to ``${CMAKE_CURRENT_BINARY_DIR}``.
+
+#]]
 #------------------------------------------------------------------------------
-# Function to get the list of generated source files for a Shiboken wrapping.
 function(sbk_get_generated_sources_list
     OUTPUT_VARIABLE
     TYPESYSTEM
@@ -126,8 +262,60 @@ function(sbk_get_generated_sources_list
     set(${OUTPUT_VARIABLE} "${_out}" PARENT_SCOPE)
 endfunction()
 
+#==============================================================================
+#[[.rst:
+.. command:: sbk_wrap_library
+
+ Generate a Python wrapping library for the specified C++ library. See the
+ `UseShiboken`_ overview for further details and a simple example.
+
+ Parameters
+ ----------
+
+ :``NAME``: CMake target name of the library to be wrapped.
+
+ Options
+ -------
+ :``NO_DEFAULT_HEURISTICS``:
+   (Boolean) By default, the ``--enable-parent-ctor-heuristic`` and
+   ``--enable-return-value-heuristic`` are passed to Shiboken. Giving this
+   option instructs ``sbk_wrap_library`` to omit them.
+ :``TYPESYSTEM``:
+   (String) Path to a custom typesystem template. ``sbk_wrap_library`` will use
+   a default template that is sufficient for trivial wrappings. For more
+   complex cases, this allows a custom typesystem template to be used instead.
+ :``OUTPUT_NAME``:
+   (String) Name of the output library (also the Shiboken package name). The
+   default is ``${NAME}Python``. See also :variable:`@TYPESYSTEM_NAME@`.
+ :``OBJECTS``:
+   (List) Names of objects (i.e. classes, structs) to be wrapped.
+   Object names following ``BY_REF`` will be wrapped as ``object-type``.
+   Object names following ``BY_VALUE`` will be wrapped as ``value-type``.
+   Object names following ``INTERFACES`` will be wrapped as ``interface-type``.
+   The default is ``BY_REF``. Type specifiers may be used more than once.
+ :``HEADERS``:
+   (List) Paths to headers that will be used to build the type system. Ideally
+   this will be e.g. ``${mylib_SDK_HEADERS}``.
+ :``DEPENDS``:
+   (List) Target names of wrapped libraries on which this wrapping depends.
+   Note that the names of the C++ libraries, not the wrapper libraries, should
+   be given. As an exception, if PySide was found, the names ``PySide:Core``
+   and ``PySide:Gui`` are also supported.
+ :``EXTRA_INCLUDES``:
+   (List) Additional (system) headers to include before the library headers in
+   the wrapping library global header. (Headers for dependencies are included
+   automatically and do not need to be listed.)
+ :``LOCAL_INCLUDE_DIRECTORIES``:
+   (List) Additional include directories (besides the C++ library and current
+   directory includes, which are added automatically) needed to build the
+   wrapping library.
+ :``GENERATE_FLAGS``:
+   (List) Additional options to pass to Shiboken.
+ :``COMPILE_FLAGS``:
+   (List) Additional compile flags to set on the wrapping library.
+
+#]]
 #------------------------------------------------------------------------------
-# Function to wrap a library using Shiboken
 function(sbk_wrap_library NAME)
     set(_pyname ${NAME}Python)
 
@@ -332,7 +520,8 @@ function(sbk_wrap_library NAME)
 
     # Record dependency information
     set_target_properties(
-        ${NAME} PROPERTIES
+        ${NAME} ${_pyname} PROPERTIES
+        SBK_WRAPPED_LIBRARY ${NAME}
         SBK_WRAPPER_TARGET ${_pyname}
         SBK_TYPESYSTEM "${_typesystem}"
         SBK_GLOBAL_HEADER "${_global_header}"

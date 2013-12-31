@@ -4,7 +4,16 @@ else()
     set(LIBRARY_OUTPUT_SUFFIX ${CMAKE_RELEASE_POSTFIX})
 endif()
 
-add_custom_target(data)
+add_custom_command(
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/UseShiboken.cmake"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/ReformatRst.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/UseShiboken.cmake"
+    COMMAND "${PYTHON_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/ReformatRst.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/UseShiboken.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/UseShiboken.cmake")
+
+add_custom_target(data ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/UseShiboken.cmake")
 add_dependencies(data shiboken)
 get_target_property(SHIBOKEN_GENERATOR shiboken OUTPUT_NAME)
 
@@ -25,5 +34,5 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/ShibokenConfigVersion.cmake"
         DESTINATION "${LIB_INSTALL_DIR}/cmake/Shiboken-${shiboken_VERSION}")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/shiboken${shiboken_SUFFIX}.pc"
         DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/UseShiboken.cmake"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/UseShiboken.cmake"
         DESTINATION "${LIB_INSTALL_DIR}/cmake/Shiboken-${shiboken_VERSION}")
