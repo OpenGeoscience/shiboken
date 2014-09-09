@@ -1,5 +1,9 @@
 #define __cplusplus 1
 
+// Provide SHIBOKEN_SKIP macro so projects can eliminate
+// code shiboken cannot parse.
+#define SHIBOKEN_SKIP
+
 #define __STDC__
 
 // Qt
