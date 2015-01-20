@@ -23,7 +23,7 @@
 #include "docparser.h"
 #include <QtCore/QDebug>
 #include <QtXmlPatterns/QXmlQuery>
-#include <QBuffer>
+#include <QtCore/QBuffer>
 
 #include <cstdlib>
 #include <libxslt/xsltutils.h>

@@ -23,7 +23,7 @@
 
 #ifndef TESTNESTEDTYPES_H
 #define TESTNESTEDTYPES_H
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestNestedTypes : public QObject
 {

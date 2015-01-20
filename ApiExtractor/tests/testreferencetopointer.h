@@ -24,7 +24,7 @@
 #ifndef TESTREFERENCETOPOINTER_H
 #define TESTREFERENCETOPOINTER_H
 
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestReferenceToPointer : public QObject
 {

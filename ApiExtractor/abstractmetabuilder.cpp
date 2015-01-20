@@ -34,20 +34,20 @@
 #include "parser/parser.h"
 #include "parser/tokens.h"
 
-#include <QDebug>
-#include <QFile>
-#include <QFileInfo>
-#include <QTextCodec>
-#include <QTextStream>
-#include <QVariant>
-#include <QTime>
-#include <QQueue>
-#include <QDir>
+#include <QtCore/QDebug>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QTextCodec>
+#include <QtCore/QTextStream>
+#include <QtCore/QVariant>
+#include <QtCore/QTime>
+#include <QtCore/QQueue>
+#include <QtCore/QDir>
 
 #include <cstdio>
 #include <algorithm>
 #include "graph.h"
-#include <QTemporaryFile>
+#include <QtCore/QTemporaryFile>
 
 static QString stripTemplateArgs(const QString &name)
 {

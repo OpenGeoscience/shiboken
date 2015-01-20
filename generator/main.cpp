@@ -21,10 +21,10 @@
  *
  */
 
-#include <QCoreApplication>
-#include <QLinkedList>
-#include <QLibrary>
-#include <QDomDocument>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QLinkedList>
+#include <QtCore/QLibrary>
+#include <QtXml/QDomDocument>
 #include <iostream>
 #include <apiextractor.h>
 #include "generator.h"

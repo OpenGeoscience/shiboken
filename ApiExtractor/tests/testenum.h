@@ -23,7 +23,7 @@
 
 #ifndef TESTENUM_H
 #define TESTENUM_H
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestEnum : public QObject
 {

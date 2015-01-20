@@ -22,9 +22,9 @@
  */
 
 #include "apiextractor.h"
-#include <QDir>
-#include <QDebug>
-#include <QTemporaryFile>
+#include <QtCore/QDir>
+#include <QtCore/QDebug>
+#include <QtCore/QTemporaryFile>
 #include <iostream>
 
 #include "reporthandler.h"

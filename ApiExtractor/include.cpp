@@ -22,8 +22,8 @@
  */
 
 #include "include.h"
-#include <QTextStream>
-#include <QHash>
+#include <QtCore/QTextStream>
+#include <QtCore/QHash>
 
 QString Include::toString() const
 {

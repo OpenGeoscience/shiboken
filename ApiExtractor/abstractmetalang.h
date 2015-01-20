@@ -29,7 +29,7 @@
 #include <QtCore/QSet>
 #include <QtCore/QStringList>
 #include <QtCore/QTextStream>
-#include <QSharedPointer>
+#include <QtCore/QSharedPointer>
 
 
 class AbstractMeta;

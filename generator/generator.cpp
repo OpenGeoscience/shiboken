@@ -29,7 +29,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <typedatabase.h>
 
 struct Generator::GeneratorPrivate {

@@ -23,8 +23,8 @@
 #ifndef SHIBOKENNORMALIZE_P_H
 #define SHIBOKENNORMALIZE_P_H
 
-#include <QMetaObject>
-#include <QByteArray>
+#include <QtCore/QMetaObject>
+#include <QtCore/QByteArray>
 
 
 #if (QT_VERSION < QT_VERSION_CHECK(4, 7, 0))

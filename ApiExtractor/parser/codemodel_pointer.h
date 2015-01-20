@@ -26,7 +26,7 @@
 #define CODEMODEL_POINTER_H
 
 #include <QtCore/QSharedData>
-#include <QAtomicPointer>
+#include <QtCore/QAtomicPointer>
 
 template <class T> class CodeModelPointer : public QAtomicPointer<T>
 {

@@ -24,8 +24,8 @@
 #include "testconversionruletag.h"
 #include <QtTest/QTest>
 #include "testutil.h"
-#include <QFile>
-#include <QTemporaryFile>
+#include <QtCore/QFile>
+#include <QtCore/QTemporaryFile>
 
 void TestConversionRuleTag::testConversionRuleTagWithFile()
 {

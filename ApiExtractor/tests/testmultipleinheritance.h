@@ -24,7 +24,7 @@
 #ifndef TESTMULTIPLEINHERITANCE_H
 #define TESTMULTIPLEINHERITANCE_H
 
-#include <QObject>
+#include <QtCore/QObject>
 
 class AbstractMetaBuilder;
 

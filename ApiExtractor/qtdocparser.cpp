@@ -24,7 +24,7 @@
 #include "qtdocparser.h"
 #include "reporthandler.h"
 #include <QtXmlPatterns/QXmlQuery>
-#include <QUrl>
+#include <QtCore/QUrl>
 
 Documentation QtDocParser::retrieveModuleDocumentation()
 {

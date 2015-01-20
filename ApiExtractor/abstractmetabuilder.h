@@ -29,8 +29,8 @@
 #include "typesystem.h"
 #include "typeparser.h"
 
-#include <QSet>
-#include <QFileInfo>
+#include <QtCore/QSet>
+#include <QtCore/QFileInfo>
 
 class TypeDatabase;
 

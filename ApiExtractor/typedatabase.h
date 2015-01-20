@@ -24,7 +24,7 @@
 #ifndef TYPEDATABASE_H
 #define TYPEDATABASE_H
 
-#include <QStringList>
+#include <QtCore/QStringList>
 #include "typesystem.h"
 #include "apiextractormacros.h"
 

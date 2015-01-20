@@ -23,7 +23,7 @@
 
 #include "testmodifydocumentation.h"
 
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 #include <QtTest/QTest>
 #include "testutil.h"
 #include <qtdocparser.h>

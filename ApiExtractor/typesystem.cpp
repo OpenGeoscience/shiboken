@@ -25,7 +25,7 @@
 #include "typesystem_p.h"
 #include "typedatabase.h"
 #include "reporthandler.h"
-#include <QtXml>
+#include <QtXml/QtXml>
 
 static QString strings_Object = QLatin1String("Object");
 static QString strings_String = QLatin1String("String");

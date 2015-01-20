@@ -23,7 +23,7 @@
 
 #ifndef TESTCONVERSIONRULE_H
 #define TESTCONVERSIONRULE_H
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestConversionRuleTag : public QObject
 {

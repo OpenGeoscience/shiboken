@@ -24,7 +24,7 @@
 #ifndef TESTNAMESPACE_H
 #define TESTNAMESPACE_H
 
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestNamespace : public QObject
 {

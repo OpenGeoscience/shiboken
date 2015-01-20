@@ -26,7 +26,7 @@
 #include <graph.h>
 #include "overloaddata.h"
 #include "shibokengenerator.h"
-#include <QTemporaryFile>
+#include <QtCore/QTemporaryFile>
 
 static const TypeEntry* getAliasedTypeEntry(const TypeEntry* typeEntry)
 {

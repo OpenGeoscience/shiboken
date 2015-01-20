@@ -22,8 +22,8 @@
 */
 
 #include "testcodeinjection.h"
-#include <QFileInfo>
-#include <QDir>
+#include <QtCore/QFileInfo>
+#include <QtCore/QDir>
 #include <QtTest/QTest>
 #include "testutil.h"
 
