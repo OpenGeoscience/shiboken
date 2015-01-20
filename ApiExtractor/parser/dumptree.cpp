@@ -114,7 +114,7 @@ void DumpTree::visit(AST *node)
     static int indent = 0;
 
     if (node)
-        qDebug() << QString(indent * 2, ' ').toLatin1().constData() << names[node->kind]
+        qDebug() << QString(indent * 2, ' ').toUtf8().constData() << names[node->kind]
         << '[' << node->start_token << ", " << node->end_token << ']';
 
     ++indent;

@@ -75,7 +75,7 @@ void Preprocessor::processFile(const QString &fileName)
 
     d->result.reserve(d->result.size() + 20 * 1024);
 
-    d->result += "# 1 \"" + fileName.toLatin1() + "\"\n"; // ### REMOVE ME
+    d->result += "# 1 \"" + fileName.toUtf8() + "\"\n"; // ### REMOVE ME
     proc.file(fileName.toLocal8Bit().constData(), std::back_inserter(d->result));
 }
 
