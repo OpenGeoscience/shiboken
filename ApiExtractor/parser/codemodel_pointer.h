@@ -55,6 +55,11 @@ public:
     {
         return (const T *) *this;
     }
+
+    inline T *operator->() const
+    {
+        return this->load();
+    }
 };
 
 #endif // CODEMODEL_POINTER_H
