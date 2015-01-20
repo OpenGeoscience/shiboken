@@ -10,7 +10,6 @@ shiboken/cppgenerator.cpp
 shiboken/headergenerator.cpp
 shiboken/overloaddata.cpp
 shiboken/shibokengenerator.cpp
-shiboken/shibokennormalize.cpp
 main.cpp
 )
 
