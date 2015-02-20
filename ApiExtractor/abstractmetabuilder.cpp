@@ -2790,12 +2790,12 @@ AbstractMetaClass* AbstractMetaBuilder::findTemplateClass(const QString& name, c
     return 0;
 }
 
-AbstractMetaClassList AbstractMetaBuilder::getBaseClasses(const AbstractMetaClass* metaClass, bool useTemplate) const
+AbstractMetaClassList AbstractMetaBuilder::getBaseClasses(const AbstractMetaClass* metaClass) const
 {
     AbstractMetaClassList baseClasses;
     foreach (const QString& parent, metaClass->baseClassNames()) {
         AbstractMetaClass* cls = 0;
-        if (useTemplate && parent.contains('<'))
+        if (parent.contains('<'))
             cls = findTemplateClass(parent, metaClass);
         else
             cls = m_metaClasses.findClass(parent);
@@ -3219,7 +3219,7 @@ AbstractMetaClassList AbstractMetaBuilder::classesTopologicalSorted(const Abstra
         if (clazz->enclosingClass() && map.contains(clazz->enclosingClass()->qualifiedCppName()))
             graph.addEdge(map[clazz->enclosingClass()->qualifiedCppName()], map[clazz->qualifiedCppName()]);
 
-        AbstractMetaClassList bases = getBaseClasses(clazz, false);
+        AbstractMetaClassList bases = getBaseClasses(clazz);
         foreach(AbstractMetaClass* baseClass, bases) {
             // Fix polymorphic expression
             if (clazz->baseClass() == baseClass)
