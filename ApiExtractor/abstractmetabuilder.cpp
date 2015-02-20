@@ -3212,10 +3212,6 @@ AbstractMetaClassList AbstractMetaBuilder::classesTopologicalSorted(const Abstra
     QRegExp regex1("\\(.*\\)");
     QRegExp regex2("::.*");
     foreach (AbstractMetaClass* clazz, classList) {
-        if (!clazz->hasInjectedDependencies() &&
-            (clazz->isInterface() || !clazz->typeEntry()->generateCode()))
-            continue;
-
         if (clazz->enclosingClass() && map.contains(clazz->enclosingClass()->qualifiedCppName()))
             graph.addEdge(map[clazz->enclosingClass()->qualifiedCppName()], map[clazz->qualifiedCppName()]);
 
