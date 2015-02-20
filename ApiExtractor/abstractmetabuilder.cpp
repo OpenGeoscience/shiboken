@@ -2802,11 +2802,10 @@ AbstractMetaClassList AbstractMetaBuilder::resolveClassDependencies(const Abstra
 {
     AbstractMetaClassList dependencies;
     foreach (const QString& parent, names) {
-        AbstractMetaClass* cls = 0;
-        if (parent.contains('<'))
+        AbstractMetaClass* cls = m_metaClasses.findClass(parent);
+
+        if (!cls && parent.contains('<'))
             cls = findTemplateClass(parent, metaClass);
-        else
-            cls = m_metaClasses.findClass(parent);
 
         if (cls)
             dependencies << cls;
