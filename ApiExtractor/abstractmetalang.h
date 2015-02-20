@@ -1429,7 +1429,7 @@ public:
               m_primaryInterfaceImplementor(0),
               m_typeEntry(0),
               m_stream(false),
-              m_hasInjectedDependencies(false)
+              m_hasDependents(false)
     {
     }
 
@@ -1701,20 +1701,24 @@ public:
      */
     bool hasProtectedMembers() const;
 
-    /**
-     * Tells if this class has dependencies injected by the metabuilder.
-     * \return true if the class has injected dependencies.
-     */
-    bool hasInjectedDependencies() const
+    bool hasDependents() const
     {
-        return m_hasInjectedDependencies;
+        return m_hasDependents;
     }
-    /**
-     * Tell the metaclass that it has injected dependencies.
-     */
-    void setHasInjectedDependencies()
+
+    void setHasDependents(bool value)
     {
-        m_hasInjectedDependencies = true;
+        m_hasDependents = value;
+    }
+
+    QStringList extraDependencies() const
+    {
+        return m_extraDependencies;
+    }
+
+    void addExtraDependency(const QString &name)
+    {
+        m_extraDependencies.append(name);
     }
 
     QList<TypeEntry *> templateArguments() const
@@ -1982,12 +1986,13 @@ private:
     AbstractMetaFunctionList m_externalConversionOperators;
 
     QStringList m_baseClassNames;
+    QStringList m_extraDependencies;
     QList<TypeEntry *> m_templateArgs;
     ComplexTypeEntry *m_typeEntry;
 //     FunctionModelItem m_qDebugStreamFunction;
 
     bool m_stream;
-    bool m_hasInjectedDependencies;
+    bool m_hasDependents;
     static int m_count;
 };
 

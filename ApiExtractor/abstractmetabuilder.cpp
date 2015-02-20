@@ -1500,26 +1500,33 @@ void AbstractMetaBuilder::traverseInstantiation(ComplexTypeEntry *entry, Abstrac
 
             addRedirections(entry, metaClass, argClass, accessor);
 
+            // Make pointer wrappers dependent on the wrapped object, in order
+            // to ensure that the pointer comes after the underlying class in
+            // topological sorting
             if (wrapsPointer
-                && entry->templateType()->wrapsPointerArg() == ordinal
-                && !argClass->baseClassName().isEmpty()) {
-                QStringList argList = parseTemplateType(metaClass->qualifiedCppName());
-                QString templateClass = argList.takeFirst();
-                argList[ordinal] = argClass->baseClass()->qualifiedCppName();
-                QString baseTemplateClass = QString("%1< %2 >").arg(templateClass).arg(argList.join(", "));
+                && entry->templateType()->wrapsPointerArg() == ordinal) {
+                metaClass->addExtraDependency(argClass->qualifiedCppName());
 
-                AbstractMetaClass* baseMetaClass = m_metaClasses.findClass(baseTemplateClass);
+                // In case of a single template argument, make the pointer to
+                // base class a dependent of this pointer; needed for
+                // downcasting to work
+                if (argTypes.count() == 1 && !argClass->baseClassName().isEmpty()) {
+                    QStringList argList = parseTemplateType(metaClass->qualifiedCppName());
+                    QString templateClass = argList.takeFirst();
+                    argList[ordinal] = argClass->baseClass()->qualifiedCppName();
+                    QString baseTemplateClass = QString("%1< %2 >").arg(templateClass).arg(argList.join(", "));
 
-                if (baseMetaClass) {
-                    metaClass->setHasInjectedDependencies();
-                    baseMetaClass->setHasInjectedDependencies();
-                    if (!metaClass->baseClass())
-                        metaClass->setBaseClass(baseMetaClass);
-                    metaClass->addBaseClassName(baseTemplateClass);
-                } else {
-                    QString warn = QString("want to inherit %1 from same class with arg %2 replaced with %3, but it is an unknown type.")
-                                    .arg(metaClass->name()).arg(ordinal).arg(argClass->baseClass()->qualifiedCppName());
-                    ReportHandler::warning(warn);
+                    AbstractMetaClass* baseMetaClass = m_metaClasses.findClass(baseTemplateClass);
+
+                    if (baseMetaClass) {
+                        if (!metaClass->baseClass())
+                            metaClass->setBaseClass(baseMetaClass);
+                        metaClass->addBaseClassName(baseTemplateClass);
+                    } else {
+                        QString warn = QString("want to inherit %1 from same class with arg %2 replaced with %3, but it is an unknown type.")
+                                        .arg(metaClass->name()).arg(ordinal).arg(argClass->baseClass()->qualifiedCppName());
+                        ReportHandler::warning(warn);
+                    }
                 }
             }
         }
@@ -2790,10 +2797,11 @@ AbstractMetaClass* AbstractMetaBuilder::findTemplateClass(const QString& name, c
     return 0;
 }
 
-AbstractMetaClassList AbstractMetaBuilder::getBaseClasses(const AbstractMetaClass* metaClass) const
+AbstractMetaClassList AbstractMetaBuilder::resolveClassDependencies(const AbstractMetaClass* metaClass,
+                                                                    const QStringList &names) const
 {
-    AbstractMetaClassList baseClasses;
-    foreach (const QString& parent, metaClass->baseClassNames()) {
+    AbstractMetaClassList dependencies;
+    foreach (const QString& parent, names) {
         AbstractMetaClass* cls = 0;
         if (parent.contains('<'))
             cls = findTemplateClass(parent, metaClass);
@@ -2801,9 +2809,19 @@ AbstractMetaClassList AbstractMetaBuilder::getBaseClasses(const AbstractMetaClas
             cls = m_metaClasses.findClass(parent);
 
         if (cls)
-            baseClasses << cls;
+            dependencies << cls;
     }
-    return baseClasses;
+    return dependencies;
+}
+
+AbstractMetaClassList AbstractMetaBuilder::getBaseClasses(const AbstractMetaClass* metaClass) const
+{
+    return resolveClassDependencies(metaClass, metaClass->baseClassNames());
+}
+
+AbstractMetaClassList AbstractMetaBuilder::getExtraDependencyClasses(const AbstractMetaClass* metaClass) const
+{
+    return resolveClassDependencies(metaClass, metaClass->extraDependencies());
 }
 
 bool AbstractMetaBuilder::ancestorHasPrivateCopyConstructor(const AbstractMetaClass* metaClass) const
@@ -3223,6 +3241,12 @@ AbstractMetaClassList AbstractMetaBuilder::classesTopologicalSorted(const Abstra
 
             if (map.contains(baseClass->qualifiedCppName()))
                 graph.addEdge(map[baseClass->qualifiedCppName()], map[clazz->qualifiedCppName()]);
+        }
+
+        AbstractMetaClassList extraDeps = getExtraDependencyClasses(clazz);
+        foreach(AbstractMetaClass* dependencyClass, extraDeps) {
+            if (map.contains(dependencyClass->qualifiedCppName()))
+                graph.addEdge(map[dependencyClass->qualifiedCppName()], map[clazz->qualifiedCppName()]);
         }
 
         foreach (AbstractMetaFunction* func, clazz->functions()) {
