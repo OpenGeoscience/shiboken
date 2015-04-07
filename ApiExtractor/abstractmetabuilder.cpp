@@ -220,6 +220,13 @@ void AbstractMetaBuilder::traverseOperatorFunction(FunctionModelItem item)
     bool firstArgumentIsSelf = true;
     bool unaryOperator = false;
 
+    if (arguments.empty()) {
+        QString warning = QString("operator with no arguments found; ignoring");
+        ReportHandler::warning(warning);
+
+        return;
+    }
+
     baseoperandClass = argumentToClass(arguments.at(0));
 
     if (arguments.size() == 1) {
