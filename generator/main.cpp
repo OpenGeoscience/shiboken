@@ -215,13 +215,8 @@ static QMap<QString, QString> getInitializedArguments()
     return args;
 }
 
-static QMap<QString, QString> getCommandLineArgs()
+static void parseCommandLine(QMap<QString, QString>& args, QStringList arguments, int& argNum)
 {
-    QMap<QString, QString> args = getInitializedArguments();
-    QStringList arguments = QCoreApplication::arguments();
-    arguments.removeFirst();
-
-    int argNum = 0;
     foreach (QString arg, arguments) {
         arg = arg.trimmed();
         if (arg.startsWith("--")) {
@@ -232,11 +227,31 @@ static QMap<QString, QString> getCommandLineArgs()
                 args[arg.mid(2)] = QString();
         } else if (arg.startsWith("-")) {
             args[arg.mid(1)] = QString();
+        } else if (arg.startsWith("@")) {
+            QFile responseFile(arg.mid(1));
+            if (responseFile.open(QIODevice::ReadOnly)) {
+                QTextStream stream(&responseFile);
+                QStringList responseArgs;
+                while (!stream.atEnd()) {
+                    responseArgs << stream.readLine();
+                }
+                parseCommandLine(args, responseArgs, argNum);
+            }
         } else {
             argNum++;
             args[QString("arg-%1").arg(argNum)] = arg;
         }
     }
+}
+
+static QMap<QString, QString> getCommandLineArgs()
+{
+    QMap<QString, QString> args = getInitializedArguments();
+    QStringList arguments = QCoreApplication::arguments();
+    arguments.removeFirst();
+
+    int argNum = 0;
+    parseCommandLine(args, arguments, argNum);
     return args;
 }
 
