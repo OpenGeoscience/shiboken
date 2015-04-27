@@ -44,6 +44,7 @@ if (NOT PYTHON_SITE_PACKAGES)
     elseif (APPLE)
         message(STATUS "!!! The generated bindings will be installed on ${PYTHON_SITE_PACKAGES}, is it right!?")
     endif()
+    file(TO_CMAKE_PATH "${PYTHON_SITE_PACKAGES}" PYTHON_SITE_PACKAGES)
 endif()
 
 if(MSVC)
