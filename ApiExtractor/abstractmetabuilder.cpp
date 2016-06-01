@@ -652,8 +652,12 @@ bool AbstractMetaBuilder::build(QIODevice* input)
                                         + m_dom->findFunctions("operator~")
                                         + m_dom->findFunctions("operator>");
 
-        foreach (FunctionModelItem item, binaryOperators)
+        foreach (FunctionModelItem item, binaryOperators) {
+            if (item->arguments().empty()) {
+                continue;
+            }
             traverseOperatorFunction(item);
+        }
     }
 
     {
