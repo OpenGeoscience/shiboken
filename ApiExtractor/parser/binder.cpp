@@ -29,6 +29,7 @@
 #include "codemodel_finder.h"
 #include "class_compiler.h"
 #include "compiler_utils.h"
+#include "reporthandler.h"
 #include "tokens.h"
 #include "dumptree.h"
 
@@ -234,8 +235,8 @@ void Binder::declare_symbol(SimpleDeclarationAST *node, InitDeclaratorAST *init_
     ScopeModelItem symbolScope = finder.resolveScope(id, currentScope());
     if (!symbolScope) {
         name_cc.run(id);
-        std::cerr << "** WARNING scope not found for symbol:"
-                  << qPrintable(name_cc.name()) << std::endl;
+        ReportHandler::warning(
+          QString("** WARNING scope not found for symbol:%1").arg(qPrintable(name_cc.name())));
         return;
     }
 
@@ -325,10 +326,9 @@ void Binder::visitFunctionDefinition(FunctionDefinitionAST *node)
     ScopeModelItem functionScope = finder.resolveScope(declarator->id, scope);
     if (!functionScope) {
         name_cc.run(declarator->id);
-        std::cerr << "** WARNING scope not found for function definition:"
-                  << qPrintable(name_cc.name()) << std::endl
-                  << "\tdefinition *ignored*"
-                  << std::endl;
+        ReportHandler::warning(
+          QString("** WARNING scope not found for function definition:%1 definition *ignored*")
+            .arg(qPrintable(name_cc.name())));
         return;
     }
 
