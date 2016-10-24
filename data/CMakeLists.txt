@@ -8,6 +8,12 @@ add_custom_target(data)
 add_dependencies(data shiboken)
 get_target_property(SHIBOKEN_GENERATOR shiboken OUTPUT_NAME)
 
+if (IS_ABSOLUTE "${PYTHON_SITE_PACKAGES}")
+  set(SBK_PYTHONPATH "${PYTHON_SITE_PACKAGES}")
+else ()
+  set(SBK_PYTHONPATH "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
+endif ()
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ShibokenConfig.cmake.in"
                "${CMAKE_CURRENT_BINARY_DIR}/ShibokenConfig.cmake" @ONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ShibokenConfig-spec.cmake.in"
