@@ -31,7 +31,7 @@
 #include "binder.h"
 #include "tokens.h"
 
-#include <qdebug.h>
+#include <QtCore/QDebug>
 
 DeclaratorCompiler::DeclaratorCompiler(Binder *binder)
         : _M_binder(binder), _M_token_stream(binder->tokenStream())

@@ -22,9 +22,9 @@
  */
 
 #include "apiextractor.h"
-#include <QDir>
-#include <QDebug>
-#include <QTemporaryFile>
+#include <QtCore/QDir>
+#include <QtCore/QDebug>
+#include <QtCore/QTemporaryFile>
 #include <iostream>
 
 #include "reporthandler.h"
@@ -276,7 +276,7 @@ static bool preprocess(const QString& sourceFile,
 
     preprocess.push_include_path(".");
     foreach (QString include, includes)
-        preprocess.push_include_path(QDir::convertSeparators(include).toStdString());
+        preprocess.push_include_path(QDir::toNativeSeparators(include).toStdString());
     preprocess.push_include_path("/usr/include");
 
     QString currentDir = QDir::current().absolutePath();

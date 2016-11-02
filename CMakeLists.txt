@@ -6,9 +6,8 @@ cmake_minimum_required(VERSION 2.6)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules/
                       ${CMAKE_MODULE_PATH})
 
-find_package(Qt4 4.5.0)
-
-add_definitions(${QT_DEFINITIONS})
+set(CMAKE_AUTOMOC TRUE)
+find_package(Qt5 COMPONENTS Core)
 
 set(shiboken_MAJOR_VERSION "1")
 set(shiboken_MINOR_VERSION "2")
@@ -116,7 +115,7 @@ add_subdirectory(libshiboken)
 add_subdirectory(doc)
 
 # deps found, compile the generator.
-if (QT4_FOUND AND PYTHONINTERP_FOUND)
+if (Qt5_FOUND AND PYTHONINTERP_FOUND)
     add_subdirectory(generator)
     add_subdirectory(shibokenmodule)
 

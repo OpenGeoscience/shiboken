@@ -23,19 +23,10 @@
 #ifndef SHIBOKENNORMALIZE_P_H
 #define SHIBOKENNORMALIZE_P_H
 
-#include <QMetaObject>
-#include <QByteArray>
+#include <QtCore/QMetaObject>
 
 
-#if (QT_VERSION < QT_VERSION_CHECK(4, 7, 0))
-    QByteArray QMetaObject_normalizedTypeQt47(const char *type);
-    QByteArray QMetaObject_normalizedSignatureQt47(const char *type);
-
-    #define SBK_NORMALIZED_TYPE(x) QMetaObject_normalizedTypeQt47(x)
-    #define SBK_NORMALIZED_SIGNATURE(x) QMetaObject_normalizedSignatureQt47(x)
-#else
-    #define SBK_NORMALIZED_TYPE(x) QMetaObject::normalizedType(x)
-    #define SBK_NORMALIZED_SIGNATURE(x) QMetaObject::normalizedSignature(x)
-#endif
+#define SBK_NORMALIZED_TYPE(x) QMetaObject::normalizedType(x)
+#define SBK_NORMALIZED_SIGNATURE(x) QMetaObject::normalizedSignature(x)
 
 #endif //SHIBOKENNORMALIZE_P_H

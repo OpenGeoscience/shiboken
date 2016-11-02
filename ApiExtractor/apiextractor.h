@@ -27,7 +27,7 @@
 #include "reporthandler.h"
 #include "abstractmetalang.h"
 #include "apiextractormacros.h"
-#include <QStringList>
+#include <QtCore/QStringList>
 
 class AbstractMetaBuilder;
 class QIODevice;

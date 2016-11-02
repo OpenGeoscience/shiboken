@@ -23,8 +23,8 @@
 #ifndef DOCPARSER_H
 #define DOCPARSER_H
 
-#include <QString>
-#include <QDir>
+#include <QtCore/QString>
+#include <QtCore/QDir>
 
 #include "abstractmetalang.h"
 

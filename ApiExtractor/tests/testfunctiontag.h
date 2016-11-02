@@ -23,7 +23,7 @@
 
 #ifndef TESTFUNCTIONTAG_H
 #define TESTFUNCTIONTAG_H
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestFunctionTag : public QObject
 {

@@ -1737,7 +1737,7 @@ static QString getConverterTypeSystemVariableArgument(const QString& code, int p
     int parenthesisDepth = 0;
     int count = 0;
     while (pos + count < code.count()) {
-        char c = code.at(pos+count).toAscii();
+        char c = code.at(pos+count).toLatin1();
         if (c == '(') {
             ++parenthesisDepth;
         } else if (c == ')') {

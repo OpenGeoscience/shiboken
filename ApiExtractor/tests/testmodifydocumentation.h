@@ -24,7 +24,7 @@
 #ifndef TESTMODIFYDOCUMENTATION_H
 #define TESTMODIFYDOCUMENTATION_H
 
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestModifyDocumentation : public QObject
 {

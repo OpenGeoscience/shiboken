@@ -29,8 +29,8 @@
 #include "typesystem.h"
 #include "typeparser.h"
 
-#include <QSet>
-#include <QFileInfo>
+#include <QtCore/QSet>
+#include <QtCore/QFileInfo>
 
 class TypeDatabase;
 
@@ -171,7 +171,8 @@ public:
 
     AbstractMetaClass *findTemplateClass(const QString& name, const AbstractMetaClass *context,
                                          TypeParser::Info *info = 0, ComplexTypeEntry **baseContainerType = 0) const;
-    AbstractMetaClassList getBaseClasses(const AbstractMetaClass* metaClass, bool useTemplate = true) const;
+    AbstractMetaClassList getBaseClasses(const AbstractMetaClass* metaClass) const;
+    AbstractMetaClassList getExtraDependencyClasses(const AbstractMetaClass* metaClass) const;
     bool ancestorHasPrivateCopyConstructor(const AbstractMetaClass* metaClass) const;
 
     bool inheritTemplate(AbstractMetaClass *subclass,
@@ -243,6 +244,9 @@ private:
     void setInclude(TypeEntry* te, const QString& fileName) const;
     void fixArgumentNames(AbstractMetaFunction* func);
     void fillAddedFunctions(AbstractMetaClass* metaClass);
+
+  AbstractMetaClassList resolveClassDependencies(const AbstractMetaClass* metaClass,
+                                                 const QStringList &names) const;
 
     AbstractMetaClassList m_metaClasses;
     AbstractMetaClassList m_templates;

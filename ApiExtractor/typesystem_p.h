@@ -23,8 +23,8 @@
 #ifndef TYPESYSTEM_P_H
 #define TYPESYSTEM_P_H
 
-#include <QStack>
-#include <QXmlDefaultHandler>
+#include <QtCore/QStack>
+#include <QtXml/QXmlDefaultHandler>
 #include "typesystem.h"
 
 class TypeDatabase;

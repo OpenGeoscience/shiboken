@@ -22,14 +22,14 @@
 */
 
 #include "graph.h"
-#include <QVector>
-#include <QDebug>
-#include <QLinkedList>
-#include <QSet>
+#include <QtCore/QVector>
+#include <QtCore/QDebug>
+#include <QtCore/QLinkedList>
+#include <QtCore/QSet>
 #include <iterator>
 #include <algorithm>
 #include <iostream>
-#include <QFile>
+#include <QtCore/QFile>
 
 struct Graph::GraphPrivate
 {

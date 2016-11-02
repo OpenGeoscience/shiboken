@@ -23,7 +23,7 @@
 
 #ifndef TESTARRAYARGUMENT_H
 #define TESTARRAYARGUMENT_H
-#include <QObject>
+#include <QtCore/QObject>
 
 class TestArrayArgument : public QObject
 {

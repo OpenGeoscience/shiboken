@@ -2,13 +2,13 @@ project(test_generator)
 
 set(dummy_generator_SRC dummygenerator.cpp)
 add_library(dummy_generator SHARED ${dummy_generator_SRC})
-target_link_libraries(dummy_generator ${APIEXTRACTOR_LIBRARY} ${QT_QTCORE_LIBRARY} genrunner)
+target_link_libraries(dummy_generator ${APIEXTRACTOR_LIBRARY} Qt5::Core genrunner)
 set_property(TARGET dummy_generator PROPERTY PREFIX "")
 
 add_executable(dummygenerator main.cpp)
 set(DUMMYGENERATOR_EXECUTABLE dummygenerator${generator_SUFFIX})
 set_target_properties(dummygenerator PROPERTIES OUTPUT_NAME ${DUMMYGENERATOR_EXECUTABLE})
-target_link_libraries(dummygenerator ${QT_QTCORE_LIBRARY})
+target_link_libraries(dummygenerator Qt5::Core)
 
 configure_file(dummygentestconfig.h.in "${CMAKE_CURRENT_BINARY_DIR}/dummygentestconfig.h" @ONLY)
 
@@ -47,7 +47,7 @@ macro(declare_test testname)
     qt4_automoc("${testname}.cpp")
     add_executable(${testname} "${testname}.cpp")
     include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-    target_link_libraries(${testname} ${QT_QTTEST_LIBRARY} ${QT_QTCORE_LIBRARY})
+    target_link_libraries(${testname} Qt5::Test Qt5::Core)
     m_add_test(${testname})
 endmacro(declare_test testname)
 

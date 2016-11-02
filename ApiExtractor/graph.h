@@ -24,9 +24,9 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include <QLinkedList>
-#include <QHash>
-#include <QString>
+#include <QtCore/QLinkedList>
+#include <QtCore/QHash>
+#include <QtCore/QString>
 
 /// A graph that can have their nodes topologically sorted.
 class Graph
